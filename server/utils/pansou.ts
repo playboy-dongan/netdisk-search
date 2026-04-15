@@ -6,6 +6,9 @@ type PansouItem = {
   source?: string
 }
 
+export const FAST_SEARCH_ENGINE = 2
+export const DEEP_SEARCH_ENGINE = 4
+
 const DEFAULT_PANSOU_API_BASE = 'https://so.252035.xyz'
 
 const diskTypeMap: Record<string, string> = {
@@ -60,16 +63,12 @@ export const getPansouApiBase = () => {
   return (config.pansouApiBase || DEFAULT_PANSOU_API_BASE).replace(/\/+$/, '')
 }
 
-export const mapEngineToSource = (engine?: number) => {
-  if (engine === 3) {
-    return 'plugin'
+export const normalizeEngine = (engine?: number) => {
+  if (engine === DEEP_SEARCH_ENGINE) {
+    return DEEP_SEARCH_ENGINE
   }
 
-  if (engine === 4) {
-    return 'tg'
-  }
-
-  return 'all'
+  return FAST_SEARCH_ENGINE
 }
 
 export const mapCurrentTypeToCloudTypes = (type?: string) => {

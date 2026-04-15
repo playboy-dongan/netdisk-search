@@ -242,8 +242,8 @@ onMounted(async () => {
             <li>
               <el-select
                 v-model="currentEngine"
-                placeholder="Select"
-                style="width: 180px"
+                placeholder="选择搜索模式"
+                style="width: 220px"
                 value-key="engine"
                 @change="handleEngineChange"
               >
@@ -266,7 +266,7 @@ onMounted(async () => {
 
         <el-empty
           v-if="!skeletonLoading && (!sources?.list || !sources?.list.length)"
-          description="暂时没有搜索结果，请尝试更换关键词、切换资源类型，或者切换搜索模式"
+          description="暂时没有搜索结果，请尝试更换关键词、切换资源类型，或者切换搜索模式。"
         />
 
         <div class="py-[40px] flex justify-center">
@@ -285,7 +285,7 @@ onMounted(async () => {
 
       <div class="p-[20px] sm:py-[20px]">
         <div class="mb-4 rounded-2xl border border-amber-200 bg-amber-50 p-4 text-sm leading-7 text-amber-800">
-          当前站点已切换为 PanSou 聚合接口。若个别资源点不开，通常是资源本身失效，不是网站部署错误。
+          默认使用 PanSou 快速搜索模式，优先保证可用性和速度。若想扩大范围，可以切换到“深度搜索（较慢）”。
         </div>
 
         <div class="bg-white dark:bg-transparent dark:shadow-gray-500 shadow p-[14px] rounded-[6px]">
