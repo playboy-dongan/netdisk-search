@@ -185,8 +185,8 @@ export default defineEventHandler(async (event) => {
         return {
             code: 500,
             msg: engine === FAST_SEARCH_ENGINE
-                ? '快速搜索当前较忙，请稍后再试或切换到深度搜索'
-                : lastError || '深度搜索当前较慢，请稍后再试',
+                ? '首批搜索结果加载较慢，请稍后重试'
+                : lastError || '补充搜索结果加载失败，请稍后再试',
         }
     } catch (error) {
         console.log(error)

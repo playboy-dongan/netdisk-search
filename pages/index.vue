@@ -40,7 +40,7 @@ const currentYear = new Date().getFullYear()
 </script>
 
 <template>
-  <div class="min-h-screen bg-[#ffffff] pb-[200px] pt-[60px] dark:bg-gray-800">
+  <div class="min-h-screen bg-[#ffffff] pb-[220px] pt-[60px] dark:bg-gray-800">
     <div class="mx-auto max-w-[1240px] px-[20px] text-right">
       <client-only>
         <el-button v-if="colorMode.preference === 'dark'" link @click="colorMode.preference = 'light'">
@@ -57,15 +57,21 @@ const currentYear = new Date().getFullYear()
       <h1 class="text-[20px] font-serif font-bold dark:text-white sm:text-[28px]">{{ siteConfig.name }}</h1>
     </div>
 
-    <div class="mx-auto mt-[20px] max-w-[1240px]">
-      <div class="mx-auto h-[40px] w-[80%] overflow-hidden rounded-[50px] border border-slate-300 font-mono sm:h-[50px] md:w-[700px]">
+    <div class="mx-auto mt-[20px] max-w-[1240px] px-[20px]">
+      <div class="mx-auto flex w-[80%] items-center gap-2 md:w-[700px]">
+        <div class="h-[40px] flex-1 overflow-hidden rounded-[50px] border border-slate-300 font-mono sm:h-[50px]">
+          <client-only>
+            <el-input
+              v-model="searchKeyword"
+              placeholder="输入关键词后回车或点击搜索"
+              @keydown.enter="search(searchKeyword)"
+              prefix-icon="Search"
+            />
+          </client-only>
+        </div>
+
         <client-only>
-          <el-input
-            v-model="searchKeyword"
-            placeholder="输入关键词后按回车搜索"
-            @keydown.enter="search(searchKeyword)"
-            prefix-icon="Search"
-          />
+          <el-button type="primary" round @click="search(searchKeyword)">搜索</el-button>
         </client-only>
       </div>
     </div>

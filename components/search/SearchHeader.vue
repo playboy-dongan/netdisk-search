@@ -32,7 +32,7 @@ watch(() => props.keyword, (value) => {
   <el-affix>
     <div class="bg-white px-[10px] py-[10px] shadow dark:bg-gray-800 md:px-[20px]">
       <div class="mx-auto flex max-w-[1240px] flex-col gap-3">
-        <div class="relative flex h-[40px] flex-row items-center gap-2 md:gap-6">
+        <div class="relative flex min-h-[40px] flex-row items-center gap-2 md:gap-4">
           <div class="flex flex-row items-center gap-2">
             <img class="h-[30px] w-[30px] cursor-pointer md:h-[40px] md:w-[40px]" :src="siteConfig.logo" alt="logo" @click="goHome()">
             <h1 class="hidden cursor-pointer text-[14px] font-serif font-bold dark:text-white md:block" @click="goHome()">
@@ -40,19 +40,25 @@ watch(() => props.keyword, (value) => {
             </h1>
           </div>
 
-          <div class="w-[220px] overflow-hidden rounded-[50px] border border-slate-300 font-mono md:w-[400px]">
+          <div class="flex flex-1 items-center gap-2 md:max-w-[520px]">
+            <div class="flex-1 overflow-hidden rounded-[50px] border border-slate-300 font-mono">
+              <client-only>
+                <el-input
+                  v-model="searchKeyword"
+                  class="h-[30px]"
+                  placeholder="输入关键词后回车或点击搜索"
+                  @keydown.enter="search()"
+                  prefix-icon="Search"
+                />
+              </client-only>
+            </div>
+
             <client-only>
-              <el-input
-                v-model="searchKeyword"
-                class="h-[30px]"
-                placeholder="输入关键词后回车搜索"
-                @keydown.enter="search()"
-                prefix-icon="Search"
-              />
+              <el-button type="primary" round @click="search()">搜索</el-button>
             </client-only>
           </div>
 
-          <div class="absolute right-[10px] md:right-[20px]">
+          <div class="flex items-center md:absolute md:right-[20px]">
             <client-only>
               <el-button v-if="colorMode.preference === 'dark'" link @click="colorMode.preference = 'light'">
                 <img class="h-[20px] w-[20px]" src="@/assets/theme/entypo--light-up.svg" alt="light mode">

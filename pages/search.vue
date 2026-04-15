@@ -11,6 +11,9 @@ definePageMeta({
   layout: 'custom',
 })
 
+const QUICK_ENGINE = 2
+const DEEP_ENGINE = 4
+
 const router = useRouter()
 const route = useRoute()
 const getApiHeaders = useSiteApiHeaders()
@@ -20,12 +23,13 @@ const keyword = ref(initialKeyword)
 const currentTabValue = ref('')
 const page = ref(1)
 const exact = ref(false)
-const sources = ref({})
-const skeletonLoading = ref(true)
-const currentEngine = ref(2)
+const primarySources = ref({})
+const deepSources = ref({})
+const primaryLoading = ref(true)
+const deepLoading = ref(false)
 const latestSourcesData = ref([])
 const latestSkeletonLoading = ref(true)
-const apiEndpointsData = ref([])
+const searchTaskId = ref(0)
 
 useSeoMeta({
   title: () => `${keyword.value || '网盘资源'} 搜索结果`,
@@ -59,6 +63,38 @@ const tabsOptions = [
   }
 ]
 
+const emptySources = () => ({
+  list: [],
+  total: 0,
+})
+
+const uniqueByLink = (items = []) => {
+  const seen = new Set()
+  return items.filter((item) => {
+    const key = item?.link || item?.disk_name
+    if (!key || seen.has(key)) {
+      return false
+    }
+    seen.add(key)
+    return true
+  })
+}
+
+const normalizeSearchData = (data) => ({
+  list: uniqueByLink(data?.list || []),
+  total: Number(data?.total || 0),
+})
+
+const buildDeepSources = (deepData, quickData) => {
+  const quickLinks = new Set((quickData?.list || []).map((item) => item.link))
+  const filteredList = (deepData?.list || []).filter((item) => item?.link && !quickLinks.has(item.link))
+
+  return {
+    list: filteredList,
+    total: filteredList.length,
+  }
+}
+
 const handleOpenSourceLink = (link) => {
   if (!link) {
     return
@@ -77,7 +113,7 @@ const handleOpenLatestSourceLink = async (item) => {
     method: "POST",
     headers: getApiHeaders(),
     body: {
-      engine: currentEngine.value,
+      engine: QUICK_ENGINE,
       doc_id: item.doc_id
     }
   })
@@ -87,12 +123,12 @@ const handleOpenLatestSourceLink = async (item) => {
   }
 }
 
-const handleSearchByHunhe = async () => {
+const fetchSearchSegment = async (engine) => {
   const res = await $fetch('/api/sources/hh/search', {
     method: 'POST',
     headers: getApiHeaders(),
     body: {
-      engine: currentEngine.value,
+      engine,
       q: keyword.value,
       page: page.value,
       size: 10,
@@ -102,13 +138,95 @@ const handleSearchByHunhe = async () => {
     }
   })
 
-  if (res.code === 200) {
-    sources.value = res.data
-  } else {
-    ElMessage.error(res.msg || '搜索源暂时不可用，请稍后再试')
+  if (res.code !== 200) {
+    throw new Error(res.msg || '搜索源暂时不可用，请稍后再试')
   }
 
-  skeletonLoading.value = false
+  return normalizeSearchData(res.data)
+}
+
+const runSearch = async () => {
+  const taskId = Date.now()
+  searchTaskId.value = taskId
+
+  if (!keyword.value) {
+    primarySources.value = emptySources()
+    deepSources.value = emptySources()
+    primaryLoading.value = false
+    deepLoading.value = false
+    return
+  }
+
+  primarySources.value = emptySources()
+  deepSources.value = emptySources()
+  primaryLoading.value = true
+  deepLoading.value = true
+
+  try {
+    const quickData = await fetchSearchSegment(QUICK_ENGINE)
+    if (searchTaskId.value !== taskId) {
+      return
+    }
+
+    primarySources.value = quickData
+  } catch (error) {
+    if (searchTaskId.value !== taskId) {
+      return
+    }
+
+    primarySources.value = emptySources()
+    ElMessage.error(error.message || '首批搜索结果加载失败')
+  } finally {
+    if (searchTaskId.value === taskId) {
+      primaryLoading.value = false
+    }
+  }
+
+  try {
+    const deepData = await fetchSearchSegment(DEEP_ENGINE)
+    if (searchTaskId.value !== taskId) {
+      return
+    }
+
+    deepSources.value = buildDeepSources(deepData, primarySources.value)
+  } catch (error) {
+    if (searchTaskId.value === taskId) {
+      deepSources.value = emptySources()
+    }
+  } finally {
+    if (searchTaskId.value === taskId) {
+      deepLoading.value = false
+    }
+  }
+}
+
+const search = async (value) => {
+  if (!value) {
+    return
+  }
+
+  keyword.value = value
+  page.value = 1
+  await router.replace({ path: '/search', query: { keyword: encodeURIComponent(value) } })
+  await runSearch()
+}
+
+const handleChangeTab = async (value) => {
+  currentTabValue.value = value
+  page.value = 1
+  await runSearch()
+}
+
+const handleCurrentPageChange = async (value) => {
+  page.value = value
+  window.scroll(0, 0)
+  await runSearch()
+}
+
+const handleChangeExact = async (value) => {
+  exact.value = !value
+  page.value = 1
+  await runSearch()
 }
 
 const getLatestSourcesData = async (targetPage, size) => {
@@ -116,7 +234,6 @@ const getLatestSourcesData = async (targetPage, size) => {
     method: 'get',
     headers: getApiHeaders(),
     query: {
-      engine: currentEngine.value,
       page: targetPage,
       size
     }
@@ -131,77 +248,15 @@ const getLatestSourcesData = async (targetPage, size) => {
   latestSkeletonLoading.value = false
 }
 
-const getApiEndpoints = async () => {
-  apiEndpointsData.value = await $fetch('/api/sources/api-endpoints', {
-    headers: getApiHeaders(),
-  })
-}
-
-const runSearch = async () => {
-  if (!keyword.value) {
-    sources.value = {}
-    skeletonLoading.value = false
-    return
-  }
-
-  skeletonLoading.value = true
-  await handleSearchByHunhe()
-}
-
-const search = async (value) => {
-  if (!value) {
-    return
-  }
-
-  keyword.value = value
-  page.value = 1
-  sources.value = {}
-  await router.replace({ path: '/search', query: { keyword: encodeURIComponent(value) } })
-  await runSearch()
-}
-
-const handleChangeTab = async (value) => {
-  currentTabValue.value = value
-  page.value = 1
-  sources.value = {}
-  skeletonLoading.value = true
-  await handleSearchByHunhe()
-}
-
-const handleCurrentPageChange = async (value) => {
-  page.value = value
-  skeletonLoading.value = true
-  window.scroll(0, 0)
-  await handleSearchByHunhe()
-}
-
-const handleChangeExact = async (value) => {
-  exact.value = !value
-  sources.value = {}
-  skeletonLoading.value = true
-  await handleSearchByHunhe()
-}
-
-const handleEngineChange = async (value) => {
-  currentEngine.value = value
-  page.value = 1
-  sources.value = {}
-  latestSourcesData.value = []
-  skeletonLoading.value = true
-  latestSkeletonLoading.value = true
-
-  await Promise.all([
-    handleSearchByHunhe(),
-    getLatestSourcesData(1, 10)
-  ])
-}
-
 const handleGoToLatestSources = () => {
   router.push({ path: '/latest-sources' })
 }
 
+const hasAnyResult = computed(() => {
+  return Boolean(primarySources.value?.list?.length || deepSources.value?.list?.length)
+})
+
 onMounted(async () => {
-  await getApiEndpoints()
   await Promise.all([
     runSearch(),
     getLatestSourcesData(1, 10)
@@ -214,7 +269,7 @@ onMounted(async () => {
     <SearchHeader :keyword="keyword" @search="search" />
 
     <div class="mx-auto grid max-w-[1240px] grid-cols-1 gap-8 md:grid-cols-[1fr_400px]">
-      <div class="flex flex-col gap-3 p-[20px] sm:mt-3 sm:pb-[60px] md:p-0">
+      <div class="flex flex-col gap-4 p-[20px] sm:mt-3 sm:pb-[60px] md:p-0">
         <div class="py-3">
           <ul class="flex flex-row flex-wrap gap-3">
             <li v-for="(item, i) in tabsOptions" :key="i">
@@ -239,38 +294,43 @@ onMounted(async () => {
                 <span class="text-[10px] md:text-[14px]">精确搜索</span>
               </el-check-tag>
             </li>
-
-            <li>
-              <el-select
-                v-model="currentEngine"
-                placeholder="选择搜索模式"
-                style="width: 220px"
-                value-key="engine"
-                @change="handleEngineChange"
-              >
-                <el-option
-                  v-for="item in apiEndpointsData"
-                  :key="item.engine"
-                  :label="item.engine_name"
-                  :value="item.engine"
-                />
-              </el-select>
-            </li>
           </ul>
         </div>
 
-        <disk-info-list
-          :sources="sources"
-          :skeleton-loading="skeletonLoading"
-          @open-link="handleOpenSourceLink"
-        />
+        <SiteDisclaimerBar />
+
+        <div class="rounded-2xl bg-white p-4 shadow dark:bg-gray-700/50">
+          <div class="mb-3 flex items-center justify-between">
+            <h2 class="text-base font-semibold text-slate-900 dark:text-white">首批搜索结果</h2>
+            <span class="text-xs text-slate-400 dark:text-slate-300">先展示较快返回的结果</span>
+          </div>
+
+          <disk-info-list
+            :sources="primarySources"
+            :skeleton-loading="primaryLoading"
+            @open-link="handleOpenSourceLink"
+          />
+        </div>
+
+        <div class="rounded-2xl bg-white p-4 shadow dark:bg-gray-700/50">
+          <div class="mb-3 flex items-center justify-between">
+            <h2 class="text-base font-semibold text-slate-900 dark:text-white">继续补充更多结果</h2>
+            <span class="text-xs text-slate-400 dark:text-slate-300">下方会继续加载更慢但范围更广的内容</span>
+          </div>
+
+          <disk-info-list
+            :sources="deepSources"
+            :skeleton-loading="deepLoading"
+            @open-link="handleOpenSourceLink"
+          />
+        </div>
 
         <el-empty
-          v-if="!skeletonLoading && (!sources?.list || !sources?.list.length)"
+          v-if="!primaryLoading && !deepLoading && !hasAnyResult"
           description="暂时没有搜索结果，请尝试更换关键词、切换资源类型，或者稍后再试。"
         />
 
-        <div class="flex justify-center py-[40px]">
+        <div class="flex justify-center py-[20px]">
           <client-only>
             <el-pagination
               background
@@ -278,17 +338,13 @@ onMounted(async () => {
               :page-size="10"
               layout="prev, pager, next"
               @current-change="handleCurrentPageChange"
-              :total="sources?.total"
+              :total="Math.max(primarySources?.total || 0, deepSources?.total || 0)"
             />
           </client-only>
         </div>
       </div>
 
       <div class="p-[20px] sm:py-[20px]">
-        <div class="mb-4 rounded-2xl border border-sky-200 bg-sky-50 p-4 text-sm leading-7 text-sky-800">
-          已启用基础限流、页面令牌校验和搜索缓存保护。若短时间请求过多，系统会临时限制访问；深度搜索范围更大，但响应会更慢。
-        </div>
-
         <div class="rounded-[6px] bg-white p-[14px] shadow dark:bg-transparent dark:shadow-gray-500">
           <div class="flex flex-row items-center justify-between">
             <span class="text-[14px] font-bold">热门搜索</span>
