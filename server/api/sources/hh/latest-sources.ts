@@ -1,28 +1,20 @@
+import { buildHotSearchList } from '~/server/utils/pansou'
+
 export default defineEventHandler(async (event) => {
-
-    try{
+    try {
         const query = await getQuery(event)
-        // https://so.yuneu.com/v1/disk/latest
-        let apiEndpoints = await $fetch('/api/sources/api-endpoints')
+        const page = Number(query.page || 1)
+        const size = Number(query.size || 10)
 
-        let engineValue = query.engine
-        let index = apiEndpoints.findIndex((item) => item.engine === parseInt(engineValue))
-
-        let res =  await  $fetch(apiEndpoints[index].latest_url,{
-            method:'GET',
-            query:{
-                ...query,
-                adv_params: apiEndpoints[index].adv_params
-            }
-        })
-
-        return res
-
-    }catch (e) {
+        return {
+            code: 200,
+            data: buildHotSearchList(page, size),
+        }
+    } catch (e) {
         console.log(e)
         return {
             code: 500,
-            msg:'error',
+            msg: 'error',
         }
     }
 })

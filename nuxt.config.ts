@@ -1,49 +1,24 @@
+import { siteConfig } from './utils/site'
+
 export default defineNuxtConfig({
     devtools: { enabled: false },
     app: {
-        // head
         head: {
-            title: '爱盼-网盘资源搜索',
+            title: siteConfig.name,
+            titleTemplate: `%s - ${siteConfig.name}`,
             meta: [
                 { name: 'viewport', content: 'width=device-width, initial-scale=1' },
-                {
-                    name: 'referrer',
-                    content: 'no-referrer'
-                },
-                {
-                    name: 'referrer',
-                    content: 'always'
-                },
+                { name: 'description', content: siteConfig.description },
+                { name: 'keywords', content: '网盘搜索,阿里云盘,百度网盘,夸克网盘,迅雷网盘' },
                 {
                     name: 'referrer',
                     content: 'strict-origin-when-cross-origin'
                 }
             ],
             link: [{ rel: 'icon', type: 'image/x-icon', href: '/favicon.ico' }],
-            script: [
-                {
-                    src: 'https://www.googletagmanager.com/gtag/js?id=G-7X3KPN3R02',
-                    async: true
-                },
-                {
-                    src: '/ga.js'
-                },
-                {
-                    src: '/qrcode.min.js'
-                },
-                {
-                    src: 'https://challenges.cloudflare.com/turnstile/v0/api.js'
-                },
-                {
-                    src: 'https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-8210373406341452',
-                    async: true,
-                    crossorigin: 'anonymous'
-                }
-            ]
-
+            script: []
         }
     },
-    // build modules
     modules: [
         '@element-plus/nuxt',
         '@nuxtjs/tailwindcss',
@@ -51,7 +26,6 @@ export default defineNuxtConfig({
         '@nuxtjs/i18n',
         '@nuxtjs/google-fonts',
         '@nuxtjs/color-mode'
-
     ],
     colorMode: {
         preference: 'light',
@@ -68,7 +42,7 @@ export default defineNuxtConfig({
         download: false,
         base64: false,
         families: {
-            'Inter': [100, 200, 300, 400, 500, 600, 700, 800, 900],
+            Inter: [100, 200, 300, 400, 500, 600, 700, 800, 900],
             'Poetsen One': [100, 200, 300, 400, 500, 600, 700, 800, 900],
             'Sedan SC': [100, 200, 300, 400, 500, 600, 700, 800, 900],
             'Briem Hand': [100, 200, 300, 400, 500, 600, 700, 800, 900],
@@ -91,18 +65,15 @@ export default defineNuxtConfig({
                 iso: 'zh-CN',
                 file: 'zh-CN.json'
             }
-        ],
+        ]
     },
-    plugins: [
-
-    ],
+    plugins: [],
     nitro: {
-        devProxy: {
-           
-        }
+        devProxy: {}
     },
     runtimeConfig: {
         openaiApiKey: '',
-        proxyUrl: ''
+        proxyUrl: '',
+        pansouApiBase: process.env.PANSOU_API_BASE || 'https://so.252035.xyz',
     }
 })

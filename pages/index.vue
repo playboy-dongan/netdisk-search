@@ -1,28 +1,45 @@
 <script setup>
+import { siteConfig } from '~/utils/site'
+
 definePageMeta({
   layout: 'custom',
 })
+
+useSeoMeta({
+  title: '免费网盘资源搜索',
+  description: siteConfig.description,
+  ogTitle: siteConfig.name,
+  ogDescription: siteConfig.description,
+})
+
 const searchKeyword = ref('')
 const router = useRouter()
 
 const search = (keyword) => {
-  router.push({path:'/search',query:{keyword:encodeURIComponent(keyword)}})
+  if (!keyword) {
+    return
+  }
+  router.push({ path: '/search', query: { keyword: encodeURIComponent(keyword) } })
 }
-const donate = () => {
-  router.push({path:'/donate'})
-}
-const hotKeywords = ref(['庆余年','歌手2024','我的阿勒泰','新生','周处除三害','热辣滚烫','第二十条','承欢记','哈哈哈哈哈'])
+
+const hotKeywords = ref([
+  '庆余年',
+  '歌手2024',
+  '我的阿勒泰',
+  '新生',
+  '周处除三害',
+  '热辣滚烫',
+  '第二十条',
+  '承欢记',
+  '哈哈哈哈哈',
+])
 
 const colorMode = useColorMode()
-
-console.log(colorMode.preference)
-
-
+const currentYear = new Date().getFullYear()
 </script>
 
 <template>
-  <div class="bg-[#ffffff] dark:bg-gray-800 min-h-screen py-[60px]">
-
+  <div class="bg-[#ffffff] dark:bg-gray-800 min-h-screen pt-[60px] pb-[180px]">
     <div class="max-w-[1240px] mx-auto text-right px-[20px]">
       <client-only>
         <el-button v-if="colorMode.preference === 'dark'" link @click="colorMode.preference = 'light'">
@@ -32,52 +49,62 @@ console.log(colorMode.preference)
           <img class="w-[20px] h-[20px]" src="@/assets/theme/icon-park-solid--dark-mode.svg" alt="">
         </el-button>
       </client-only>
-
     </div>
+
     <div class="flex flex-row items-center justify-center gap-3 mt-[80px]">
-      <img class="w-[40px] h-[40px] sm:w-[60px] sm:h-[60px]" src="@/assets/my-logo.png" alt="logo">
-      <h1 class="text-[18px] sm:text-[24px] font-serif font-bold dark:text-white ">爱盼-网盘资源搜索</h1>
+      <img class="w-[40px] h-[40px] sm:w-[60px] sm:h-[60px]" :src="siteConfig.logo" alt="logo">
+      <h1 class="text-[18px] sm:text-[24px] font-serif font-bold dark:text-white">{{ siteConfig.name }}</h1>
     </div>
 
     <div class="max-w-[1240px] mx-auto mt-[20px]">
       <div class="w-[80%] md:w-[700px] mx-auto h-[40px] sm:h-[50px] border border-slate-300 font-mono overflow-hidden rounded-[50px]">
         <client-only>
           <el-input
-                    v-model="searchKeyword"
-                    placeholder="请输入关键词搜索"
-                    @keydown.enter="search(searchKeyword)"
-                    prefix-icon="Search"
-          >
-          </el-input>
+            v-model="searchKeyword"
+            placeholder="输入关键词后按回车搜索"
+            @keydown.enter="search(searchKeyword)"
+            prefix-icon="Search"
+          />
         </client-only>
       </div>
     </div>
 
     <div class="max-w-[520px] mx-auto mt-[20px]">
       <div class="flex flex-row flex-wrap gap-1 justify-center">
-        <el-tag class="mx-1 cursor-pointer"
-                v-for="keyword in hotKeywords"
-                :key="keyword"
-                type="info"
-                @click="search(keyword)"
+        <el-tag
+          v-for="keyword in hotKeywords"
+          :key="keyword"
+          class="mx-1 cursor-pointer"
+          type="info"
+          @click="search(keyword)"
         >
           {{ keyword }}
         </el-tag>
       </div>
+    </div>
 
+    <div class="max-w-[1240px] mx-auto mt-[24px] px-[20px]">
+      <div class="w-[80%] md:w-[700px] mx-auto">
+        <AdPlaceholder
+          title="首页横幅广告位"
+          description="后续接入 Google AdSense 时，可以把这一块替换成响应式横幅广告代码。"
+        />
+      </div>
     </div>
 
     <div class="fixed bottom-0 left-0 right-0 bg-white dark:bg-gray-800 p-3">
-      <div class="flex flex-row items-center justify-center  gap-3 my-3">
-        <a class="" href="https://github.com/unilei/aipan-netdisk-search">
+      <div class="flex flex-row items-center justify-center gap-3 my-3">
+        <a :href="siteConfig.githubUrl" target="_blank" rel="noreferrer">
           <img class="w-[30px] h-[30px]" src="@/assets/skill-icons--github-dark.svg" alt="github">
         </a>
-        <el-button link color="#ffffff" @click="donate()">
-          <img  class="w-[30px] h-[30px]" src="@/assets/donation/dashang.svg" alt="打赏">
-        </el-button>
       </div>
-      <p class="text-center text-[8px] sm:text-[12px] text-slate-400">
-        声明：本站不产生/存储任何数据，也从未参与录制、上传，所有资源均来自网络。
+      <div class="flex flex-wrap items-center justify-center gap-4 text-[12px] text-slate-500 dark:text-slate-300">
+        <NuxtLink class="hover:text-blue-600" to="/about">关于我们</NuxtLink>
+        <NuxtLink class="hover:text-blue-600" to="/privacy">隐私政策</NuxtLink>
+        <NuxtLink class="hover:text-blue-600" to="/contact">联系方式</NuxtLink>
+      </div>
+      <p class="text-center text-[8px] sm:text-[12px] text-slate-400 mt-2">
+        © {{ currentYear }} {{ siteConfig.name }}。声明：本站不产生或存储任何资源数据，仅提供搜索入口，所有结果均来自第三方网络接口。
       </p>
     </div>
   </div>
@@ -87,12 +114,13 @@ console.log(colorMode.preference)
 :deep(.el-input__inner) {
   height: 48px;
 }
+
 @media screen and (max-width: 768px) {
   :deep(.el-input__inner) {
     height: 37px;
   }
-
 }
+
 :deep(.el-input__wrapper) {
   box-shadow: none;
 }

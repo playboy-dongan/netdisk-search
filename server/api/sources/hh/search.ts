@@ -1,30 +1,53 @@
-import apiEndpoints from "~/assets/data/api-endpoints";
+import { getPansouApiBase, mapCurrentTypeToCloudTypes, mapEngineToSource, transformMergedByTypeToLegacyList } from '~/server/utils/pansou'
 
 export default defineEventHandler(async (event) => {
-
     try {
-        let body = await readBody(event)
+        const body = await readBody(event)
+        const keyword = String(body.q || '').trim()
+        const page = Number(body.page || 1)
+        const size = Number(body.size || 10)
 
-        let apiEndpoints = await $fetch('/api/sources/api-endpoints')
+        if (!keyword) {
+            return {
+                code: 200,
+                data: {
+                    list: [],
+                    total: 0,
+                }
+            }
+        }
 
-        let engineValue = body.engine
-        let index = apiEndpoints.findIndex((item) => item.engine === engineValue)
+        const cloudTypes = mapCurrentTypeToCloudTypes(body.type)
+        const src = mapEngineToSource(Number(body.engine))
+        const pansouApiBase = getPansouApiBase()
 
-        let res = await $fetch(apiEndpoints[index].url, {
-            method: 'POST',
-            body: {
-                ...body,
-                adv_params: apiEndpoints[index].adv_params
+        const res = await $fetch(`${pansouApiBase}/api/search`, {
+            method: 'GET',
+            query: {
+                kw: keyword,
+                res: 'merged_by_type',
+                src,
+                cloud_types: cloudTypes.length ? cloudTypes.join(',') : undefined,
+                conc: 8,
             }
         })
 
-        return res
+        if (res.code !== 0) {
+            return {
+                code: 500,
+                msg: res.message || 'error',
+            }
+        }
 
+        return {
+            code: 200,
+            data: transformMergedByTypeToLegacyList(res.data?.merged_by_type || {}, page, size),
+        }
     } catch (e) {
         console.log(e)
         return {
             code: 500,
-            msg: 'error',
+            msg: 'PanSou API 暂时不可用，请稍后再试',
         }
     }
 })
