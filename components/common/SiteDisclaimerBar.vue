@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import SiteLegalLinks from '~/components/common/SiteLegalLinks.vue'
 import { siteDisclaimerText } from '~/utils/site'
 
 defineProps({
@@ -11,11 +12,11 @@ defineProps({
 
 <template>
   <div
-    class="rounded-2xl border border-amber-200 bg-amber-50 text-amber-900 dark:border-amber-500/40 dark:bg-amber-500/10 dark:text-amber-100"
-    :class="compact ? 'px-4 py-3 text-xs leading-6' : 'px-5 py-4 text-sm leading-7'"
+    class="w-full text-center text-red-600 dark:text-amber-300"
+    :class="compact ? 'text-xs leading-6' : 'text-sm leading-7'"
   >
     <SiteLegalLinks />
-    <p class="mt-2">
+    <p class="mt-1 font-semibold">
       {{ siteDisclaimerText }}
     </p>
   </div>

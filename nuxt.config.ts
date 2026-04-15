@@ -75,5 +75,8 @@ export default defineNuxtConfig({
         openaiApiKey: '',
         proxyUrl: '',
         pansouApiBase: process.env.PANSOU_API_BASE || 'https://so.252035.xyz',
+        public: {
+            googleAnalyticsId: process.env.NUXT_PUBLIC_GA_MEASUREMENT_ID || '',
+        }
     }
 })

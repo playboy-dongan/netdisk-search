@@ -3,10 +3,15 @@ import { legalLinks } from '~/utils/site'
 </script>
 
 <template>
-  <nav class="flex flex-wrap items-center justify-center gap-2 text-sm text-slate-600 dark:text-slate-300">
+  <nav class="flex flex-wrap items-center justify-center gap-x-2 gap-y-1 text-sm font-semibold text-amber-700 dark:text-amber-300">
     <template v-for="(item, index) in legalLinks" :key="item.to">
-      <NuxtLink class="hover:text-blue-600" :to="item.to">{{ item.label }}</NuxtLink>
-      <span v-if="index < legalLinks.length - 1" class="text-slate-300 dark:text-slate-500">|</span>
+      <NuxtLink
+        class="rounded px-1 underline decoration-2 underline-offset-4 transition hover:text-red-600 dark:hover:text-yellow-200"
+        :to="item.to"
+      >
+        {{ item.label }}
+      </NuxtLink>
+      <span v-if="index < legalLinks.length - 1" class="text-amber-400 dark:text-amber-500">|</span>
     </template>
   </nav>
 </template>

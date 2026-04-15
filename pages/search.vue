@@ -1,6 +1,7 @@
 <script setup>
 import SearchHeader from "~/components/search/SearchHeader.vue";
 import DiskInfoList from "~/components/diskInfoList.vue";
+import SiteDisclaimerBar from '~/components/common/SiteDisclaimerBar.vue'
 import aliImg from '@/assets/netdisk/aliyun.png'
 import quarkImg from '@/assets/netdisk/quark.png'
 import xunleiImg from '@/assets/netdisk/xunlei.png'
@@ -268,8 +269,8 @@ onMounted(async () => {
   <div class="dark:bg-gray-400">
     <SearchHeader :keyword="keyword" @search="search" />
 
-    <div class="mx-auto grid max-w-[1240px] grid-cols-1 gap-8 md:grid-cols-[1fr_400px]">
-      <div class="flex flex-col gap-4 p-[20px] sm:mt-3 sm:pb-[60px] md:p-0">
+    <div class="mx-auto grid max-w-[1240px] grid-cols-1 gap-8 md:grid-cols-[minmax(0,1fr)_360px]">
+      <div class="min-w-0 flex flex-col gap-4 p-[20px] sm:mt-3 sm:pb-[60px] md:p-0">
         <div class="py-3">
           <ul class="flex flex-row flex-wrap gap-3">
             <li v-for="(item, i) in tabsOptions" :key="i">
@@ -344,9 +345,9 @@ onMounted(async () => {
         </div>
       </div>
 
-      <div class="p-[20px] sm:py-[20px]">
-        <div class="rounded-[6px] bg-white p-[14px] shadow dark:bg-transparent dark:shadow-gray-500">
-          <div class="flex flex-row items-center justify-between">
+      <div class="min-w-0 p-[20px] sm:py-[20px]">
+        <div class="min-w-0 rounded-[6px] bg-white p-[14px] shadow dark:bg-transparent dark:shadow-gray-500">
+          <div class="flex min-w-0 flex-row items-center justify-between gap-2">
             <span class="text-[14px] font-bold">热门搜索</span>
             <div>
               <el-button link icon="refresh" @click="getLatestSourcesData(1, 10)"></el-button>
@@ -358,10 +359,10 @@ onMounted(async () => {
             <el-skeleton animated :loading="latestSkeletonLoading" :count="10">
               <template #template>
                 <div
-                  class="mb-3 cursor-pointer rounded-[6px] bg-white p-[14px] shadow
+                  class="mb-3 min-w-0 cursor-pointer rounded-[6px] bg-white p-[14px] shadow
                   transition duration-300 ease-in-out hover:bg-[#f5f5f5] hover:shadow-lg dark:bg-gray-600"
                 >
-                  <div class="flex flex-row items-center gap-2">
+                  <div class="flex min-w-0 flex-row items-center gap-2">
                     <el-skeleton-item variant="image" style="width: 20px; height: 20px" />
                     <el-skeleton-item variant="text" style="width: 100px;" />
                   </div>
@@ -372,12 +373,12 @@ onMounted(async () => {
                 <div
                   v-for="(item, i) in latestSourcesData?.list ? latestSourcesData?.list : latestSourcesData"
                   :key="i"
-                  class="cursor-pointer rounded-[6px] bg-white p-[14px] shadow transition duration-300 ease-in-out
+                  class="min-w-0 cursor-pointer rounded-[6px] bg-white p-[14px] shadow transition duration-300 ease-in-out
                   hover:bg-[#f5f5f5] hover:shadow-lg dark:bg-gray-600 dark:hover:bg-gray-700"
                   @click="handleOpenLatestSourceLink(item)"
                 >
-                  <div class="flex flex-row items-center gap-2">
-                    <span class="truncate break-words font-inter text-[14px] dark:text-slate-200">{{ item.disk_name }}</span>
+                  <div class="flex min-w-0 flex-row items-center gap-2">
+                    <span class="min-w-0 break-all font-inter text-[14px] dark:text-slate-200">{{ item.disk_name }}</span>
                   </div>
                 </div>
               </template>

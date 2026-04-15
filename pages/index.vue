@@ -1,4 +1,6 @@
 <script setup>
+import SiteDisclaimerBar from '~/components/common/SiteDisclaimerBar.vue'
+import SiteLegalLinks from '~/components/common/SiteLegalLinks.vue'
 import { siteConfig, siteDisclaimerText } from '~/utils/site'
 
 definePageMeta({
@@ -76,7 +78,7 @@ const currentYear = new Date().getFullYear()
       </div>
     </div>
 
-    <div class="mx-auto mt-[16px] max-w-[760px] px-[20px]">
+    <div class="mx-auto mt-[16px] max-w-[980px] px-[20px]">
       <SiteDisclaimerBar />
     </div>
 
