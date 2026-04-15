@@ -7,6 +7,8 @@ definePageMeta({
   layout: 'custom',
 })
 
+const getApiHeaders = useSiteApiHeaders()
+
 useSeoMeta({
   title: '热门搜索',
   description: `查看 ${siteConfig.name} 当前推荐的热门搜索关键词。`,
@@ -31,6 +33,7 @@ const getLatestSourcesData = async (page, size) => {
 
   const res = await $fetch('/api/sources/hh/latest-sources', {
     method: 'get',
+    headers: getApiHeaders(),
     query: {
       page,
       size
@@ -63,11 +66,11 @@ onMounted(() => {
   <div class="min-h-screen">
     <SearchHeader :keyword="keyword" @search="search" />
 
-    <div class="max-w-[1240px] mx-auto p-[20px] sm:py-[20px]">
-      <div class="max-w-[1240px] mx-auto grid grid-cols-1 md:grid-cols-[1fr_400px] gap-8">
+    <div class="mx-auto max-w-[1240px] p-[20px] sm:py-[20px]">
+      <div class="mx-auto grid max-w-[1240px] grid-cols-1 gap-8 md:grid-cols-[1fr_400px]">
         <div class="min-h-[calc(100vh-90px)]" id="latest-sources-all">
           <div class="text-xl font-bold dark:text-white">热门搜索</div>
-          <div class="grid grid-cols-1 gap-3 mt-3">
+          <div class="mt-3 grid grid-cols-1 gap-3">
             <DiskInfoList :sources="latestSourcesData" @open-link="handleOpenSourceLink" />
           </div>
           <div class="mt-[20px] flex justify-center">

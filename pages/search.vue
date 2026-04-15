@@ -13,6 +13,7 @@ definePageMeta({
 
 const router = useRouter()
 const route = useRoute()
+const getApiHeaders = useSiteApiHeaders()
 const initialKeyword = typeof route.query.keyword === 'string' ? decodeURIComponent(route.query.keyword) : ''
 
 const keyword = ref(initialKeyword)
@@ -72,27 +73,24 @@ const handleOpenLatestSourceLink = async (item) => {
     return
   }
 
-  if (currentEngine.value !== 8) {
-    const res = await $fetch('/api/sources/hh/doc', {
-      method: "POST",
-      body: {
-        engine: currentEngine.value,
-        doc_id: item.doc_id
-      }
-    })
-
-    if (res.code === 200) {
-      window.open(res.data.link, '_blank')
+  const res = await $fetch('/api/sources/hh/doc', {
+    method: "POST",
+    headers: getApiHeaders(),
+    body: {
+      engine: currentEngine.value,
+      doc_id: item.doc_id
     }
-    return
-  }
+  })
 
-  window.open(item.link, '_blank')
+  if (res.code === 200) {
+    window.open(res.data.link, '_blank')
+  }
 }
 
 const handleSearchByHunhe = async () => {
   const res = await $fetch('/api/sources/hh/search', {
     method: 'POST',
+    headers: getApiHeaders(),
     body: {
       engine: currentEngine.value,
       q: keyword.value,
@@ -116,6 +114,7 @@ const handleSearchByHunhe = async () => {
 const getLatestSourcesData = async (targetPage, size) => {
   const res = await $fetch('/api/sources/hh/latest-sources', {
     method: 'get',
+    headers: getApiHeaders(),
     query: {
       engine: currentEngine.value,
       page: targetPage,
@@ -133,7 +132,9 @@ const getLatestSourcesData = async (targetPage, size) => {
 }
 
 const getApiEndpoints = async () => {
-  apiEndpointsData.value = await $fetch('/api/sources/api-endpoints')
+  apiEndpointsData.value = await $fetch('/api/sources/api-endpoints', {
+    headers: getApiHeaders(),
+  })
 }
 
 const runSearch = async () => {
@@ -212,10 +213,10 @@ onMounted(async () => {
   <div class="dark:bg-gray-400">
     <SearchHeader :keyword="keyword" @search="search" />
 
-    <div class="max-w-[1240px] mx-auto grid grid-cols-1 md:grid-cols-[1fr_400px] gap-8">
-      <div class="flex flex-col gap-3 sm:mt-3 sm:pb-[60px] p-[20px] md:p-0">
+    <div class="mx-auto grid max-w-[1240px] grid-cols-1 gap-8 md:grid-cols-[1fr_400px]">
+      <div class="flex flex-col gap-3 p-[20px] sm:mt-3 sm:pb-[60px] md:p-0">
         <div class="py-3">
-          <ul class="flex flex-row gap-3 flex-wrap">
+          <ul class="flex flex-row flex-wrap gap-3">
             <li v-for="(item, i) in tabsOptions" :key="i">
               <el-check-tag
                 class="dark:bg-gray-950"
@@ -266,10 +267,10 @@ onMounted(async () => {
 
         <el-empty
           v-if="!skeletonLoading && (!sources?.list || !sources?.list.length)"
-          description="暂时没有搜索结果，请尝试更换关键词、切换资源类型，或者切换搜索模式。"
+          description="暂时没有搜索结果，请尝试更换关键词、切换资源类型，或者稍后再试。"
         />
 
-        <div class="py-[40px] flex justify-center">
+        <div class="flex justify-center py-[40px]">
           <client-only>
             <el-pagination
               background
@@ -284,12 +285,12 @@ onMounted(async () => {
       </div>
 
       <div class="p-[20px] sm:py-[20px]">
-        <div class="mb-4 rounded-2xl border border-amber-200 bg-amber-50 p-4 text-sm leading-7 text-amber-800">
-          默认使用 PanSou 快速搜索模式，优先保证可用性和速度。若想扩大范围，可以切换到“深度搜索（较慢）”。
+        <div class="mb-4 rounded-2xl border border-sky-200 bg-sky-50 p-4 text-sm leading-7 text-sky-800">
+          已启用基础限流、页面令牌校验和搜索缓存保护。若短时间请求过多，系统会临时限制访问；深度搜索范围更大，但响应会更慢。
         </div>
 
-        <div class="bg-white dark:bg-transparent dark:shadow-gray-500 shadow p-[14px] rounded-[6px]">
-          <div class="flex flex-row justify-between items-center">
+        <div class="rounded-[6px] bg-white p-[14px] shadow dark:bg-transparent dark:shadow-gray-500">
+          <div class="flex flex-row items-center justify-between">
             <span class="text-[14px] font-bold">热门搜索</span>
             <div>
               <el-button link icon="refresh" @click="getLatestSourcesData(1, 10)"></el-button>
@@ -297,14 +298,14 @@ onMounted(async () => {
             </div>
           </div>
 
-          <div class="grid grid-cols-1 gap-3 mt-3 min-h-[500px]" id="latest-sources">
+          <div class="mt-3 grid min-h-[500px] grid-cols-1 gap-3" id="latest-sources">
             <el-skeleton animated :loading="latestSkeletonLoading" :count="10">
               <template #template>
                 <div
-                  class="bg-white dark:bg-gray-600 shadow p-[14px] rounded-[6px] cursor-pointer mb-3
-                  hover:bg-[#f5f5f5] hover:shadow-lg transition duration-300 ease-in-out"
+                  class="mb-3 cursor-pointer rounded-[6px] bg-white p-[14px] shadow
+                  transition duration-300 ease-in-out hover:bg-[#f5f5f5] hover:shadow-lg dark:bg-gray-600"
                 >
-                  <div class="flex flex-row gap-2 items-center">
+                  <div class="flex flex-row items-center gap-2">
                     <el-skeleton-item variant="image" style="width: 20px; height: 20px" />
                     <el-skeleton-item variant="text" style="width: 100px;" />
                   </div>
@@ -315,12 +316,12 @@ onMounted(async () => {
                 <div
                   v-for="(item, i) in latestSourcesData?.list ? latestSourcesData?.list : latestSourcesData"
                   :key="i"
-                  class="bg-white dark:bg-gray-600 shadow p-[14px] rounded-[6px] cursor-pointer
-                  hover:bg-[#f5f5f5] dark:hover:bg-gray-700 hover:shadow-lg transition duration-300 ease-in-out"
+                  class="cursor-pointer rounded-[6px] bg-white p-[14px] shadow transition duration-300 ease-in-out
+                  hover:bg-[#f5f5f5] hover:shadow-lg dark:bg-gray-600 dark:hover:bg-gray-700"
                   @click="handleOpenLatestSourceLink(item)"
                 >
-                  <div class="flex flex-row gap-2 items-center">
-                    <span class="text-[14px] font-inter break-words truncate dark:text-slate-200">{{ item.disk_name }}</span>
+                  <div class="flex flex-row items-center gap-2">
+                    <span class="truncate break-words font-inter text-[14px] dark:text-slate-200">{{ item.disk_name }}</span>
                   </div>
                 </div>
               </template>

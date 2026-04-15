@@ -21,10 +21,6 @@ const search = () => {
   emit('search', searchKeyword.value)
 }
 
-const goGithub = () => {
-  window.open(siteConfig.githubUrl, '_blank')
-}
-
 const colorMode = useColorMode()
 
 watch(() => props.keyword, (value) => {
@@ -34,38 +30,41 @@ watch(() => props.keyword, (value) => {
 
 <template>
   <el-affix>
-    <div class="bg-white dark:bg-gray-800 shadow px-[10px] md:px-[20px] py-[10px]">
-      <div class="max-w-[1240px] mx-auto h-[40px] flex flex-row items-center gap-2 md:gap-6 relative">
-        <div class="flex flex-row items-center gap-1">
-          <img class="w-[30px] h-[30px] md:w-[40px] md:h-[40px] cursor-pointer" :src="siteConfig.logo" alt="logo" @click="goHome()">
-          <h1 class="hidden md:block text-[14px] font-serif font-bold cursor-pointer dark:text-white" @click="goHome()">{{ siteConfig.shortName }}</h1>
+    <div class="bg-white px-[10px] py-[10px] shadow dark:bg-gray-800 md:px-[20px]">
+      <div class="mx-auto flex max-w-[1240px] flex-col gap-3">
+        <div class="relative flex h-[40px] flex-row items-center gap-2 md:gap-6">
+          <div class="flex flex-row items-center gap-2">
+            <img class="h-[30px] w-[30px] cursor-pointer md:h-[40px] md:w-[40px]" :src="siteConfig.logo" alt="logo" @click="goHome()">
+            <h1 class="hidden cursor-pointer text-[14px] font-serif font-bold dark:text-white md:block" @click="goHome()">
+              {{ siteConfig.shortName }}
+            </h1>
+          </div>
+
+          <div class="w-[220px] overflow-hidden rounded-[50px] border border-slate-300 font-mono md:w-[400px]">
+            <client-only>
+              <el-input
+                v-model="searchKeyword"
+                class="h-[30px]"
+                placeholder="输入关键词后回车搜索"
+                @keydown.enter="search()"
+                prefix-icon="Search"
+              />
+            </client-only>
+          </div>
+
+          <div class="absolute right-[10px] md:right-[20px]">
+            <client-only>
+              <el-button v-if="colorMode.preference === 'dark'" link @click="colorMode.preference = 'light'">
+                <img class="h-[20px] w-[20px]" src="@/assets/theme/entypo--light-up.svg" alt="light mode">
+              </el-button>
+              <el-button v-if="colorMode.preference === 'light'" link @click="colorMode.preference = 'dark'">
+                <img class="h-[20px] w-[20px]" src="@/assets/theme/icon-park-solid--dark-mode.svg" alt="dark mode">
+              </el-button>
+            </client-only>
+          </div>
         </div>
 
-        <div class="w-[220px] md:w-[400px] border border-slate-300 font-mono overflow-hidden rounded-[50px]">
-          <client-only>
-            <el-input
-              class="h-[30px]"
-              v-model="searchKeyword"
-              placeholder="输入关键词后回车搜索"
-              @keydown.enter="search()"
-              prefix-icon="Search"
-            />
-          </client-only>
-        </div>
-
-        <div class="absolute right-[10px] md:right-[20px]">
-          <client-only>
-            <el-button v-if="colorMode.preference === 'dark'" link @click="colorMode.preference = 'light'">
-              <img class="w-[20px] h-[20px]" src="@/assets/theme/entypo--light-up.svg" alt="">
-            </el-button>
-            <el-button v-if="colorMode.preference === 'light'" link @click="colorMode.preference = 'dark'">
-              <img class="w-[20px] h-[20px]" src="@/assets/theme/icon-park-solid--dark-mode.svg" alt="">
-            </el-button>
-          </client-only>
-          <el-button link @click="goGithub()">
-            <img class="w-[20px] h-[20px]" src="@/assets/skill-icons--github-dark.svg" alt="github">
-          </el-button>
-        </div>
+        <SiteDisclaimerBar compact />
       </div>
     </div>
   </el-affix>

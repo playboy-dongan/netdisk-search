@@ -10,6 +10,7 @@ export const FAST_SEARCH_ENGINE = 2
 export const DEEP_SEARCH_ENGINE = 4
 
 const DEFAULT_PANSOU_API_BASE = 'https://so.252035.xyz'
+const MAX_KEYWORD_LENGTH = 50
 
 const diskTypeMap: Record<string, string> = {
   aliyun: 'ALY',
@@ -69,6 +70,25 @@ export const normalizeEngine = (engine?: number) => {
   }
 
   return FAST_SEARCH_ENGINE
+}
+
+export const normalizeKeyword = (value?: string) => {
+  const keyword = String(value || '')
+    .replace(/[\u0000-\u001F\u007F]/g, ' ')
+    .replace(/\s+/g, ' ')
+    .trim()
+
+  return keyword.slice(0, MAX_KEYWORD_LENGTH)
+}
+
+export const clampPositiveNumber = (value: unknown, min: number, max: number, fallback: number) => {
+  const parsed = Number(value)
+
+  if (!Number.isFinite(parsed)) {
+    return fallback
+  }
+
+  return Math.min(Math.max(Math.floor(parsed), min), max)
 }
 
 export const mapCurrentTypeToCloudTypes = (type?: string) => {

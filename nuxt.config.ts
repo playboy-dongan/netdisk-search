@@ -9,13 +9,13 @@ export default defineNuxtConfig({
             meta: [
                 { name: 'viewport', content: 'width=device-width, initial-scale=1' },
                 { name: 'description', content: siteConfig.description },
-                { name: 'keywords', content: '网盘搜索,阿里云盘,百度网盘,夸克网盘,迅雷网盘' },
+                { name: 'keywords', content: '网盘搜索,阿里云盘,百度网盘,夸克网盘,迅雷网盘,网盘搜搜' },
                 {
                     name: 'referrer',
                     content: 'strict-origin-when-cross-origin'
                 }
             ],
-            link: [{ rel: 'icon', type: 'image/x-icon', href: '/favicon.ico' }],
+            link: [{ rel: 'icon', type: 'image/svg+xml', href: '/icon.svg' }],
             script: []
         }
     },

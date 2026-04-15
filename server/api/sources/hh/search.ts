@@ -1,9 +1,11 @@
 import {
     DEEP_SEARCH_ENGINE,
     FAST_SEARCH_ENGINE,
+    clampPositiveNumber,
     getPansouApiBase,
     mapCurrentTypeToCloudTypes,
     normalizeEngine,
+    normalizeKeyword,
     transformMergedByTypeToLegacyList
 } from '~/server/utils/pansou'
 
@@ -106,9 +108,9 @@ const getSearchPlans = (engine: number): SearchPlan[] => {
 export default defineEventHandler(async (event) => {
     try {
         const body = await readBody(event)
-        const keyword = String(body.q || '').trim()
-        const page = Number(body.page || 1)
-        const size = Number(body.size || 10)
+        const keyword = normalizeKeyword(body.q)
+        const page = clampPositiveNumber(body.page, 1, 100, 1)
+        const size = clampPositiveNumber(body.size, 1, 20, 10)
 
         if (!keyword) {
             return {

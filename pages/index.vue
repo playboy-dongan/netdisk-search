@@ -1,5 +1,5 @@
 <script setup>
-import { siteConfig } from '~/utils/site'
+import { siteConfig, siteDisclaimerText } from '~/utils/site'
 
 definePageMeta({
   layout: 'custom',
@@ -19,6 +19,7 @@ const search = (keyword) => {
   if (!keyword) {
     return
   }
+
   router.push({ path: '/search', query: { keyword: encodeURIComponent(keyword) } })
 }
 
@@ -39,25 +40,25 @@ const currentYear = new Date().getFullYear()
 </script>
 
 <template>
-  <div class="bg-[#ffffff] dark:bg-gray-800 min-h-screen pt-[60px] pb-[180px]">
-    <div class="max-w-[1240px] mx-auto text-right px-[20px]">
+  <div class="min-h-screen bg-[#ffffff] pb-[200px] pt-[60px] dark:bg-gray-800">
+    <div class="mx-auto max-w-[1240px] px-[20px] text-right">
       <client-only>
         <el-button v-if="colorMode.preference === 'dark'" link @click="colorMode.preference = 'light'">
-          <img class="w-[20px] h-[20px]" src="@/assets/theme/entypo--light-up.svg" alt="">
+          <img class="h-[20px] w-[20px]" src="@/assets/theme/entypo--light-up.svg" alt="light mode">
         </el-button>
         <el-button v-if="colorMode.preference === 'light'" link @click="colorMode.preference = 'dark'">
-          <img class="w-[20px] h-[20px]" src="@/assets/theme/icon-park-solid--dark-mode.svg" alt="">
+          <img class="h-[20px] w-[20px]" src="@/assets/theme/icon-park-solid--dark-mode.svg" alt="dark mode">
         </el-button>
       </client-only>
     </div>
 
-    <div class="flex flex-row items-center justify-center gap-3 mt-[80px]">
-      <img class="w-[40px] h-[40px] sm:w-[60px] sm:h-[60px]" :src="siteConfig.logo" alt="logo">
-      <h1 class="text-[18px] sm:text-[24px] font-serif font-bold dark:text-white">{{ siteConfig.name }}</h1>
+    <div class="mt-[80px] flex flex-row items-center justify-center gap-3">
+      <img class="h-[40px] w-[40px] sm:h-[60px] sm:w-[60px]" :src="siteConfig.logo" alt="logo">
+      <h1 class="text-[20px] font-serif font-bold dark:text-white sm:text-[28px]">{{ siteConfig.name }}</h1>
     </div>
 
-    <div class="max-w-[1240px] mx-auto mt-[20px]">
-      <div class="w-[80%] md:w-[700px] mx-auto h-[40px] sm:h-[50px] border border-slate-300 font-mono overflow-hidden rounded-[50px]">
+    <div class="mx-auto mt-[20px] max-w-[1240px]">
+      <div class="mx-auto h-[40px] w-[80%] overflow-hidden rounded-[50px] border border-slate-300 font-mono sm:h-[50px] md:w-[700px]">
         <client-only>
           <el-input
             v-model="searchKeyword"
@@ -69,8 +70,12 @@ const currentYear = new Date().getFullYear()
       </div>
     </div>
 
-    <div class="max-w-[520px] mx-auto mt-[20px]">
-      <div class="flex flex-row flex-wrap gap-1 justify-center">
+    <div class="mx-auto mt-[16px] max-w-[760px] px-[20px]">
+      <SiteDisclaimerBar />
+    </div>
+
+    <div class="mx-auto mt-[20px] max-w-[520px]">
+      <div class="flex flex-row flex-wrap justify-center gap-1">
         <el-tag
           v-for="keyword in hotKeywords"
           :key="keyword"
@@ -83,8 +88,8 @@ const currentYear = new Date().getFullYear()
       </div>
     </div>
 
-    <div class="max-w-[1240px] mx-auto mt-[24px] px-[20px]">
-      <div class="w-[80%] md:w-[700px] mx-auto">
+    <div class="mx-auto mt-[24px] max-w-[1240px] px-[20px]">
+      <div class="mx-auto w-[80%] md:w-[700px]">
         <AdPlaceholder
           title="首页横幅广告位"
           description="后续接入 Google AdSense 时，可以把这一块替换成响应式横幅广告代码。"
@@ -92,20 +97,16 @@ const currentYear = new Date().getFullYear()
       </div>
     </div>
 
-    <div class="fixed bottom-0 left-0 right-0 bg-white dark:bg-gray-800 p-3">
-      <div class="flex flex-row items-center justify-center gap-3 my-3">
-        <a :href="siteConfig.githubUrl" target="_blank" rel="noreferrer">
-          <img class="w-[30px] h-[30px]" src="@/assets/skill-icons--github-dark.svg" alt="github">
-        </a>
+    <div class="fixed bottom-0 left-0 right-0 bg-white p-4 dark:bg-gray-800">
+      <div class="mx-auto flex max-w-[1240px] flex-col items-center gap-3">
+        <SiteLegalLinks />
+        <p class="text-center text-[11px] leading-6 text-slate-400 sm:text-[12px]">
+          {{ siteDisclaimerText }}
+        </p>
+        <p class="text-center text-[11px] text-slate-300 dark:text-slate-500">
+          © {{ currentYear }} {{ siteConfig.name }}
+        </p>
       </div>
-      <div class="flex flex-wrap items-center justify-center gap-4 text-[12px] text-slate-500 dark:text-slate-300">
-        <NuxtLink class="hover:text-blue-600" to="/about">关于我们</NuxtLink>
-        <NuxtLink class="hover:text-blue-600" to="/privacy">隐私政策</NuxtLink>
-        <NuxtLink class="hover:text-blue-600" to="/contact">联系方式</NuxtLink>
-      </div>
-      <p class="text-center text-[8px] sm:text-[12px] text-slate-400 mt-2">
-        © {{ currentYear }} {{ siteConfig.name }}。声明：本站不产生或存储任何资源数据，仅提供搜索入口，所有结果均来自第三方网络接口。
-      </p>
     </div>
   </div>
 </template>
