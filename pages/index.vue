@@ -67,21 +67,6 @@ const diskEntrances = [
   },
 ]
 
-const searchTips = [
-  {
-    title: '关键词尽量具体',
-    description: '用作品名、课程名、文件名搜索；结果太多时加上年份、清晰度或格式。',
-  },
-  {
-    title: '优先查看来源和时间',
-    description: '同名资源很多时，先看来源、网盘类型和更新时间，再决定是否打开。',
-  },
-  {
-    title: '只使用公开分享',
-    description: '本站仅聚合公开网络信息，请勿传播侵权、非法或商业用途资源。',
-  },
-]
-
 const colorMode = useColorMode()
 const currentYear = new Date().getFullYear()
 </script>
@@ -159,23 +144,6 @@ const currentYear = new Date().getFullYear()
         </div>
       </section>
 
-      <section class="mx-auto mt-12 max-w-[1040px] px-5">
-        <h2 class="text-center text-[18px] font-bold text-slate-900 dark:text-white sm:text-[22px]">
-          搜索建议
-        </h2>
-        <div class="mt-6 grid gap-4 md:grid-cols-3">
-          <article
-            v-for="item in searchTips"
-            :key="item.title"
-            class="rounded-[8px] border border-slate-100 bg-white p-4 shadow-sm dark:border-gray-700 dark:bg-gray-900"
-          >
-            <h3 class="text-[15px] font-semibold text-slate-900 dark:text-white">{{ item.title }}</h3>
-            <p class="mt-3 text-[13px] leading-6 text-slate-500 dark:text-slate-300">
-              {{ item.description }}
-            </p>
-          </article>
-        </div>
-      </section>
     </main>
 
     <footer id="site-footer" class="bg-white p-4 dark:bg-gray-800">
