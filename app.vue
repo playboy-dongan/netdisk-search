@@ -6,11 +6,75 @@
 
 <script setup lang="ts">
 import * as ElementPlusIconsVue from '@element-plus/icons-vue'
+import { siteConfig } from '~/utils/site'
 
 const nuxtApp = useNuxtApp()
+const route = useRoute()
 const runtimeConfig = useRuntimeConfig()
 const googleAnalyticsId = `${runtimeConfig.public.googleAnalyticsId || ''}`.trim()
 const hasGoogleAnalytics = /^G-[A-Z0-9]+$/i.test(googleAnalyticsId)
+const decodeSearchKeyword = (value: string) => {
+  try {
+    return decodeURIComponent(value)
+  } catch {
+    return value
+  }
+}
+const canonicalUrl = computed(() => {
+  let canonicalPath = route.path.replace(/\/+$/, '') || '/'
+
+  if (canonicalPath.startsWith('/en/')) {
+    canonicalPath = canonicalPath.replace(/^\/en/, '') || '/'
+  } else if (canonicalPath === '/en') {
+    canonicalPath = '/'
+  }
+
+  const url = new URL(canonicalPath, siteConfig.domain)
+  const keyword = typeof route.query.keyword === 'string' ? route.query.keyword.trim() : ''
+
+  if (canonicalPath === '/search' && keyword) {
+    url.searchParams.set('keyword', decodeSearchKeyword(keyword))
+  }
+
+  return url.toString()
+})
+
+useHead({
+  link: [
+    {
+      key: 'canonical',
+      rel: 'canonical',
+      href: canonicalUrl,
+    },
+  ],
+  meta: [
+    {
+      key: 'robots',
+      name: 'robots',
+      content: 'index, follow',
+    },
+    {
+      key: 'og:type',
+      property: 'og:type',
+      content: 'website',
+    },
+    {
+      key: 'og:url',
+      property: 'og:url',
+      content: canonicalUrl,
+    },
+    {
+      key: 'og:site_name',
+      property: 'og:site_name',
+      content: siteConfig.name,
+    },
+    {
+      key: 'twitter:card',
+      name: 'twitter:card',
+      content: 'summary',
+    },
+  ],
+})
 
 if (hasGoogleAnalytics) {
   useHead({
