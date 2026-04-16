@@ -79,7 +79,7 @@ const formatDate = (date: string) => {
     </template>
   </el-skeleton>
 
-  <template v-else>
+  <div v-else class="flex min-w-0 flex-col gap-3">
       <template v-for="(item, i) in sources?.list" :key="`${item.link || item.doc_id || 'item'}-${i}`">
         <div
           class="min-w-0 bg-white dark:bg-gray-600 shadow p-[14px] rounded-[6px] cursor-pointer
@@ -135,7 +135,7 @@ const formatDate = (date: string) => {
           </div>
         </template>
       </el-skeleton>
-  </template>
+  </div>
 </template>
 
 <style>
