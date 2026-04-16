@@ -14,6 +14,8 @@ definePageMeta({
 
 const QUICK_ENGINE = 2
 const DEEP_ENGINE = 4
+const SEARCH_RETRY_COUNT = 2
+const SEARCH_RETRY_DELAY = 350
 
 const router = useRouter()
 const route = useRoute()
@@ -96,6 +98,34 @@ const buildDeepSources = (deepData, quickData) => {
   }
 }
 
+const wait = (delay) => new Promise((resolve) => {
+  setTimeout(resolve, delay)
+})
+
+const combinedSources = computed(() => {
+  const list = uniqueByLink([
+    ...(primarySources.value?.list || []),
+    ...(deepSources.value?.list || [])
+  ])
+
+  return {
+    list,
+    total: Math.max(
+      primarySources.value?.total || 0,
+      deepSources.value?.total || 0,
+      list.length
+    )
+  }
+})
+
+const appendSkeletonCount = computed(() => {
+  if (primaryLoading.value || !deepLoading.value || !keyword.value) {
+    return 0
+  }
+
+  return 10
+})
+
 const handleOpenSourceLink = (link) => {
   if (!link) {
     return
@@ -124,7 +154,7 @@ const handleOpenLatestSourceLink = async (item) => {
   }
 }
 
-const fetchSearchSegment = async (engine) => {
+const fetchSearchSegmentOnce = async (engine) => {
   const res = await $fetch('/api/sources/hh/search', {
     method: 'POST',
     headers: getApiHeaders(),
@@ -146,8 +176,30 @@ const fetchSearchSegment = async (engine) => {
   return normalizeSearchData(res.data)
 }
 
+const fetchSearchSegment = async (engine, taskId) => {
+  let lastError
+
+  for (let attempt = 0; attempt <= SEARCH_RETRY_COUNT; attempt++) {
+    if (searchTaskId.value !== taskId) {
+      throw new Error('搜索已更新')
+    }
+
+    try {
+      return await fetchSearchSegmentOnce(engine)
+    } catch (error) {
+      lastError = error
+
+      if (attempt < SEARCH_RETRY_COUNT) {
+        await wait(SEARCH_RETRY_DELAY * (attempt + 1))
+      }
+    }
+  }
+
+  throw lastError
+}
+
 const runSearch = async () => {
-  const taskId = Date.now()
+  const taskId = searchTaskId.value + 1
   searchTaskId.value = taskId
 
   if (!keyword.value) {
@@ -164,7 +216,7 @@ const runSearch = async () => {
   deepLoading.value = true
 
   try {
-    const quickData = await fetchSearchSegment(QUICK_ENGINE)
+    const quickData = await fetchSearchSegment(QUICK_ENGINE, taskId)
     if (searchTaskId.value !== taskId) {
       return
     }
@@ -176,7 +228,6 @@ const runSearch = async () => {
     }
 
     primarySources.value = emptySources()
-    ElMessage.error(error.message || '首批搜索结果加载失败')
   } finally {
     if (searchTaskId.value === taskId) {
       primaryLoading.value = false
@@ -184,7 +235,7 @@ const runSearch = async () => {
   }
 
   try {
-    const deepData = await fetchSearchSegment(DEEP_ENGINE)
+    const deepData = await fetchSearchSegment(DEEP_ENGINE, taskId)
     if (searchTaskId.value !== taskId) {
       return
     }
@@ -254,7 +305,7 @@ const handleGoToLatestSources = () => {
 }
 
 const hasAnyResult = computed(() => {
-  return Boolean(primarySources.value?.list?.length || deepSources.value?.list?.length)
+  return Boolean(combinedSources.value.list.length)
 })
 
 onMounted(async () => {
@@ -301,27 +352,10 @@ onMounted(async () => {
         <SiteDisclaimerBar />
 
         <div class="rounded-2xl bg-white p-4 shadow dark:bg-gray-700/50">
-          <div class="mb-3 flex items-center justify-between">
-            <h2 class="text-base font-semibold text-slate-900 dark:text-white">首批搜索结果</h2>
-            <span class="text-xs text-slate-400 dark:text-slate-300">先展示较快返回的结果</span>
-          </div>
-
           <disk-info-list
-            :sources="primarySources"
+            :sources="combinedSources"
             :skeleton-loading="primaryLoading"
-            @open-link="handleOpenSourceLink"
-          />
-        </div>
-
-        <div class="rounded-2xl bg-white p-4 shadow dark:bg-gray-700/50">
-          <div class="mb-3 flex items-center justify-between">
-            <h2 class="text-base font-semibold text-slate-900 dark:text-white">继续补充更多结果</h2>
-            <span class="text-xs text-slate-400 dark:text-slate-300">下方会继续加载更慢但范围更广的内容</span>
-          </div>
-
-          <disk-info-list
-            :sources="deepSources"
-            :skeleton-loading="deepLoading"
+            :append-skeleton-count="appendSkeletonCount"
             @open-link="handleOpenSourceLink"
           />
         </div>
@@ -339,7 +373,7 @@ onMounted(async () => {
               :page-size="10"
               layout="prev, pager, next"
               @current-change="handleCurrentPageChange"
-              :total="Math.max(primarySources?.total || 0, deepSources?.total || 0)"
+              :total="combinedSources.total"
             />
           </client-only>
         </div>

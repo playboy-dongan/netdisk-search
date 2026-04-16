@@ -7,6 +7,14 @@ defineProps({
   skeletonLoading: {
     type: Boolean,
     default: false
+  },
+  skeletonCount: {
+    type: Number,
+    default: 20
+  },
+  appendSkeletonCount: {
+    type: Number,
+    default: 0
   }
 })
 
@@ -51,7 +59,7 @@ const formatDate = (date: string) => {
 </script>
 
 <template>
-  <el-skeleton :loading="skeletonLoading" animated :count="20">
+  <el-skeleton v-if="skeletonLoading" animated :count="skeletonCount">
     <template #template>
       <div
         class="bg-white dark:bg-gray-600 shadow p-[14px] rounded-[6px] cursor-pointer mb-3
@@ -69,8 +77,9 @@ const formatDate = (date: string) => {
         </div>
       </div>
     </template>
+  </el-skeleton>
 
-    <template #default>
+  <template v-else>
       <template v-for="(item, i) in sources?.list" :key="`${item.link || item.doc_id || 'item'}-${i}`">
         <div
           class="bg-white dark:bg-gray-600 shadow p-[14px] rounded-[6px] cursor-pointer
@@ -113,8 +122,27 @@ const formatDate = (date: string) => {
           description="建议在第 3 条结果后插入信息流广告，既醒目，也不容易影响用户继续浏览。"
         />
       </template>
-    </template>
-  </el-skeleton>
+
+      <el-skeleton v-if="appendSkeletonCount > 0" animated :count="appendSkeletonCount">
+        <template #template>
+          <div
+            class="bg-white dark:bg-gray-600 shadow p-[14px] rounded-[6px] cursor-pointer mb-3
+            hover:bg-[#f5f5f5] hover:shadow-lg transition duration-300 ease-in-out"
+          >
+            <div class="flex flex-row gap-2 items-center">
+              <el-skeleton-item variant="image" style="width: 20px; height: 20px" />
+              <el-skeleton-item variant="text" style="width: 100px;" />
+            </div>
+            <div>
+              <el-skeleton-item variant="text" style="width: 100%;" />
+            </div>
+            <div>
+              <el-skeleton-item variant="text" style="width: 100%;" />
+            </div>
+          </div>
+        </template>
+      </el-skeleton>
+  </template>
 </template>
 
 <style>
