@@ -1,5 +1,8 @@
 import { siteConfig } from './utils/site'
 
+const siteUrl = siteConfig.domain.replace(/\/$/, '')
+const shareImageUrl = `${siteUrl}/og-image.png`
+
 export default defineNuxtConfig({
     devtools: { enabled: false },
     app: {
@@ -13,9 +16,27 @@ export default defineNuxtConfig({
                 {
                     name: 'referrer',
                     content: 'strict-origin-when-cross-origin'
-                }
+                },
+                { name: 'theme-color', content: '#ffffff' },
+                { property: 'og:type', content: 'website' },
+                { property: 'og:site_name', content: siteConfig.name },
+                { property: 'og:image', content: shareImageUrl },
+                { property: 'og:image:secure_url', content: shareImageUrl },
+                { property: 'og:image:type', content: 'image/png' },
+                { property: 'og:image:width', content: '1200' },
+                { property: 'og:image:height', content: '630' },
+                { property: 'og:image:alt', content: 'Netdisk Search share preview' },
+                { name: 'twitter:card', content: 'summary_large_image' },
+                { name: 'twitter:title', content: siteConfig.name },
+                { name: 'twitter:description', content: siteConfig.description },
+                { name: 'twitter:image', content: shareImageUrl }
             ],
-            link: [{ rel: 'icon', type: 'image/svg+xml', href: '/icon.svg' }],
+            link: [
+                { rel: 'icon', type: 'image/svg+xml', href: '/icon.svg' },
+                { rel: 'icon', type: 'image/png', sizes: '32x32', href: '/favicon-32x32.png' },
+                { rel: 'shortcut icon', href: '/favicon.ico' },
+                { rel: 'apple-touch-icon', sizes: '180x180', href: '/apple-touch-icon.png' }
+            ],
             script: [
                 {
                     key: 'google-adsense',
