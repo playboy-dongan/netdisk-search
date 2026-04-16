@@ -12,7 +12,7 @@ defineProps({
 
 <template>
   <div
-    class="w-full text-center text-red-600 dark:text-amber-300"
+    class="w-full min-w-0 break-words px-2 text-center text-red-600 dark:text-amber-300"
     :class="compact ? 'text-xs leading-6' : 'text-sm leading-7'"
   >
     <SiteLegalLinks />

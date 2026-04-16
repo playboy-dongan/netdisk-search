@@ -82,23 +82,23 @@ const formatDate = (date: string) => {
   <template v-else>
       <template v-for="(item, i) in sources?.list" :key="`${item.link || item.doc_id || 'item'}-${i}`">
         <div
-          class="bg-white dark:bg-gray-600 shadow p-[14px] rounded-[6px] cursor-pointer
+          class="min-w-0 bg-white dark:bg-gray-600 shadow p-[14px] rounded-[6px] cursor-pointer
           hover:bg-[#f5f5f5] dark:hover:bg-gray-700 hover:shadow-lg transition duration-300 ease-in-out"
           @click="handleOpenSourceLink(item.link)"
         >
-          <div class="flex flex-row gap-2 items-center">
+          <div class="flex min-w-0 flex-row gap-2 items-center">
             <img class="w-[20px]" v-if="item.disk_type === 'ALY'" src="@/assets/netdisk/aliyun.png" alt="aliyun">
             <img class="w-[20px]" v-if="item.disk_type === 'QUARK'" src="@/assets/netdisk/quark.png" alt="quark">
             <img class="w-[20px]" v-if="item.disk_type === 'BDY'" src="@/assets/netdisk/baidu.png" alt="baidu">
             <img class="w-[20px]" v-if="item.disk_type === 'XUNLEI'" src="@/assets/netdisk/xunlei.png" alt="xunlei">
-            <p class="text-[14px] font-inter font-[600] truncate dark:text-white" v-html="item.disk_name"></p>
+            <p class="min-w-0 flex-1 truncate text-[14px] font-inter font-[600] dark:text-white" v-html="item.disk_name"></p>
           </div>
 
           <div class="py-[12px]">
-            <p class="text-[12px] text-slate-400 dark:text-slate-200 truncate-3-lines" v-html="item.files"></p>
+            <p class="min-w-0 text-[12px] text-slate-400 dark:text-slate-200 truncate-3-lines" v-html="item.files"></p>
           </div>
 
-          <div class="text-[12px] text-slate-600 flex flex-row items-center justify-between">
+          <div class="flex min-w-0 flex-col items-start gap-2 text-[12px] text-slate-600 sm:flex-row sm:items-center sm:justify-between">
             <div class="flex flex-row items-center gap-2 flex-wrap">
               <span v-if="item.disk_type" class="bg-blue-500 text-white px-[6px] py-[2px] rounded">
                 {{ formatDiskType(item.disk_type) }}
@@ -107,20 +107,13 @@ const formatDate = (date: string) => {
                 {{ item.disk_pass }}
               </span>
             </div>
-            <div>
+            <div class="shrink-0">
               <span v-if="item.update_time" class="text-slate-600 px-[6px] py-[2px] rounded">
                 {{ formatDate(item.update_time) }}
               </span>
             </div>
           </div>
         </div>
-
-        <AdPlaceholder
-          v-if="i === 2"
-          class="my-3"
-          title="搜索结果广告位"
-          description="建议在第 3 条结果后插入信息流广告，既醒目，也不容易影响用户继续浏览。"
-        />
       </template>
 
       <el-skeleton v-if="appendSkeletonCount > 0" animated :count="appendSkeletonCount">

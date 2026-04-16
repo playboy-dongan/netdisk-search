@@ -30,18 +30,18 @@ watch(() => props.keyword, (value) => {
 
 <template>
   <el-affix>
-    <div class="bg-white px-[10px] py-[10px] shadow dark:bg-gray-800 md:px-[20px]">
+    <div class="min-w-0 overflow-x-hidden bg-white px-[10px] py-[10px] shadow dark:bg-gray-800 md:px-[20px]">
       <div class="mx-auto flex max-w-[1240px] flex-col gap-3">
         <div class="relative flex min-h-[40px] flex-row items-center gap-2 md:gap-4">
-          <div class="flex flex-row items-center gap-2">
+          <div class="flex shrink-0 flex-row items-center gap-2">
             <img class="h-[30px] w-[30px] cursor-pointer md:h-[40px] md:w-[40px]" :src="siteConfig.logo" alt="logo" @click="goHome()">
             <h1 class="hidden cursor-pointer text-[14px] font-serif font-bold dark:text-white md:block" @click="goHome()">
               {{ siteConfig.shortName }}
             </h1>
           </div>
 
-          <div class="flex flex-1 items-center gap-2 md:max-w-[520px]">
-            <div class="flex-1 overflow-hidden rounded-[50px] border border-slate-300 font-mono">
+          <div class="header-search-control flex min-w-0 flex-1 items-center gap-2 md:max-w-[520px]">
+            <div class="min-w-0 flex-1 overflow-hidden rounded-[50px] border border-slate-300 font-mono">
               <client-only>
                 <el-input
                   v-model="searchKeyword"
@@ -54,11 +54,11 @@ watch(() => props.keyword, (value) => {
             </div>
 
             <client-only>
-              <el-button type="primary" round @click="search()">搜索</el-button>
+              <el-button class="header-search-button shrink-0" type="primary" round @click="search()">搜索</el-button>
             </client-only>
           </div>
 
-          <div class="flex items-center md:absolute md:right-[20px]">
+          <div class="hidden items-center md:absolute md:right-[20px] md:flex">
             <client-only>
               <el-button v-if="colorMode.preference === 'dark'" link @click="colorMode.preference = 'light'">
                 <img class="h-[20px] w-[20px]" src="@/assets/theme/entypo--light-up.svg" alt="light mode">
@@ -70,7 +70,9 @@ watch(() => props.keyword, (value) => {
           </div>
         </div>
 
-        <SiteDisclaimerBar compact />
+        <client-only>
+          <el-button class="mobile-search-button w-full" type="primary" round @click="search()">搜索</el-button>
+        </client-only>
       </div>
     </div>
   </el-affix>
@@ -106,5 +108,24 @@ watch(() => props.keyword, (value) => {
 
 :deep(.el-select .el-input__wrapper.is-focus) {
   box-shadow: none !important;
+}
+
+.mobile-search-button {
+  display: none;
+}
+
+@media screen and (max-width: 639px) {
+  .header-search-control {
+    flex: 0 1 auto;
+    width: calc(100vw - 96px) !important;
+  }
+
+  .header-search-button {
+    display: none !important;
+  }
+
+  .mobile-search-button {
+    display: inline-flex !important;
+  }
 }
 </style>

@@ -317,13 +317,13 @@ onMounted(async () => {
 </script>
 
 <template>
-  <div class="dark:bg-gray-400">
+  <div class="min-w-0 overflow-x-hidden dark:bg-gray-400">
     <SearchHeader :keyword="keyword" @search="search" />
 
-    <div class="mx-auto grid max-w-[1240px] grid-cols-1 gap-8 md:grid-cols-[minmax(0,1fr)_360px]">
+    <div class="mx-auto grid max-w-[1240px] grid-cols-1 gap-4 md:gap-8 lg:grid-cols-[minmax(0,1fr)_360px]">
       <div class="min-w-0 flex flex-col gap-4 p-[20px] sm:mt-3 sm:pb-[60px] md:p-0">
         <div class="py-3">
-          <ul class="flex flex-row flex-wrap gap-3">
+          <ul class="flex max-w-full flex-row flex-wrap gap-2">
             <li v-for="(item, i) in tabsOptions" :key="i">
               <el-check-tag
                 class="dark:bg-gray-950"
@@ -349,9 +349,7 @@ onMounted(async () => {
           </ul>
         </div>
 
-        <SiteDisclaimerBar />
-
-        <div class="rounded-2xl bg-white p-4 shadow dark:bg-gray-700/50">
+        <div class="min-w-0 rounded-[8px] bg-white p-3 shadow dark:bg-gray-700/50 sm:p-4">
           <disk-info-list
             :sources="combinedSources"
             :skeleton-loading="primaryLoading"
@@ -421,6 +419,10 @@ onMounted(async () => {
         </div>
       </div>
     </div>
+
+    <footer class="mx-auto max-w-[1240px] px-5 pb-8 pt-2">
+      <SiteDisclaimerBar compact />
+    </footer>
 
     <el-backtop></el-backtop>
   </div>

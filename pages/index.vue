@@ -1,5 +1,9 @@
 <script setup>
 import SiteLegalLinks from '~/components/common/SiteLegalLinks.vue'
+import aliImg from '@/assets/netdisk/aliyun.png'
+import bdyImg from '@/assets/netdisk/baidu.png'
+import quarkImg from '@/assets/netdisk/quark.png'
+import xunleiImg from '@/assets/netdisk/xunlei.png'
 import { siteConfig, siteDisclaimerText } from '~/utils/site'
 
 definePageMeta({
@@ -36,13 +40,55 @@ const hotKeywords = ref([
   '哈哈哈哈哈',
 ])
 
+const diskEntrances = [
+  {
+    title: '阿里云盘资源',
+    description: '适合查找公开分享的影视、课程、资料合集。',
+    keyword: '阿里云盘',
+    image: aliImg,
+  },
+  {
+    title: '百度网盘资源',
+    description: '适合查找常见公开资料、老资源和学习内容。',
+    keyword: '百度网盘',
+    image: bdyImg,
+  },
+  {
+    title: '夸克网盘资源',
+    description: '适合查找近期热门内容和公开分享合集。',
+    keyword: '夸克网盘',
+    image: quarkImg,
+  },
+  {
+    title: '迅雷网盘资源',
+    description: '适合查找公开转存资源和影视相关内容。',
+    keyword: '迅雷网盘',
+    image: xunleiImg,
+  },
+]
+
+const searchTips = [
+  {
+    title: '关键词尽量具体',
+    description: '用作品名、课程名、文件名搜索；结果太多时加上年份、清晰度或格式。',
+  },
+  {
+    title: '优先查看来源和时间',
+    description: '同名资源很多时，先看来源、网盘类型和更新时间，再决定是否打开。',
+  },
+  {
+    title: '只使用公开分享',
+    description: '本站仅聚合公开网络信息，请勿传播侵权、非法或商业用途资源。',
+  },
+]
+
 const colorMode = useColorMode()
 const currentYear = new Date().getFullYear()
 </script>
 
 <template>
-  <div class="flex min-h-screen flex-col bg-[#ffffff] dark:bg-gray-800">
-    <main id="home-search-area" class="flex-1 pb-10 pt-[60px]">
+  <div class="min-w-0 overflow-x-hidden bg-[#ffffff] dark:bg-gray-800">
+    <main id="home-search-area" class="min-h-screen pb-12 pt-[48px] sm:pt-[60px]">
       <div class="mx-auto max-w-[1240px] px-[20px] text-right">
         <client-only>
           <el-button v-if="colorMode.preference === 'dark'" link @click="colorMode.preference = 'light'">
@@ -54,14 +100,14 @@ const currentYear = new Date().getFullYear()
         </client-only>
       </div>
 
-      <div class="mt-[80px] flex flex-row items-center justify-center gap-3">
+      <div class="mt-[72px] flex flex-row items-center justify-center gap-3 sm:mt-[80px]">
         <img class="h-[40px] w-[40px] sm:h-[60px] sm:w-[60px]" :src="siteConfig.logo" alt="logo">
         <h1 class="text-[20px] font-serif font-bold dark:text-white sm:text-[28px]">{{ siteConfig.name }}</h1>
       </div>
 
       <div class="mx-auto mt-[20px] max-w-[1240px] px-[20px]">
-        <div class="mx-auto flex w-[80%] items-center gap-2 md:w-[700px]">
-          <div class="h-[40px] flex-1 overflow-hidden rounded-[50px] border border-slate-300 font-mono sm:h-[50px]">
+        <div class="home-search-controls mx-auto flex flex-col items-stretch gap-2 sm:flex-row sm:items-center">
+          <div class="h-[40px] min-w-0 flex-1 overflow-hidden rounded-[50px] border border-slate-300 font-mono sm:h-[50px]">
             <client-only>
               <el-input
                 v-model="searchKeyword"
@@ -73,24 +119,63 @@ const currentYear = new Date().getFullYear()
           </div>
 
           <client-only>
-            <el-button type="primary" round @click="search(searchKeyword)">搜索</el-button>
+            <el-button class="w-full shrink-0 sm:w-auto" type="primary" round @click="search(searchKeyword)">搜索</el-button>
           </client-only>
         </div>
       </div>
 
-      <div class="mx-auto mt-[20px] max-w-[520px]">
-        <div class="flex flex-row flex-wrap justify-center gap-1">
-          <el-tag
+      <div class="home-keyword-list mx-auto mt-[20px]">
+        <div class="flex flex-row flex-wrap justify-center gap-2">
+          <NuxtLink
             v-for="keyword in hotKeywords"
             :key="keyword"
-            class="mx-1 cursor-pointer"
-            type="info"
-            @click="search(keyword)"
+            class="rounded-[6px] border border-slate-200 bg-slate-50 px-3 py-1 text-[12px] text-slate-600 transition hover:border-blue-300 hover:text-blue-600 dark:border-gray-700 dark:bg-gray-900 dark:text-slate-200"
+            :to="{ path: '/search', query: { keyword } }"
           >
             {{ keyword }}
-          </el-tag>
+          </NuxtLink>
         </div>
       </div>
+
+      <section class="mx-auto mt-16 max-w-[1040px] px-5">
+        <h2 class="text-center text-[18px] font-bold text-slate-900 dark:text-white sm:text-[22px]">
+          常用网盘入口
+        </h2>
+        <div class="mt-6 grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+          <NuxtLink
+            v-for="item in diskEntrances"
+            :key="item.title"
+            class="min-w-0 rounded-[8px] border border-slate-100 bg-white p-4 shadow-sm transition hover:border-blue-200 hover:shadow dark:border-gray-700 dark:bg-gray-900"
+            :to="{ path: '/search', query: { keyword: item.keyword } }"
+          >
+            <div class="flex items-center gap-3">
+              <img class="h-8 w-8 shrink-0" :src="item.image" :alt="item.title">
+              <h3 class="min-w-0 text-[15px] font-semibold text-slate-900 dark:text-white">{{ item.title }}</h3>
+            </div>
+            <p class="mt-3 text-[13px] leading-6 text-slate-500 dark:text-slate-300">
+              {{ item.description }}
+            </p>
+          </NuxtLink>
+        </div>
+      </section>
+
+      <section class="mx-auto mt-12 max-w-[1040px] px-5">
+        <h2 class="text-center text-[18px] font-bold text-slate-900 dark:text-white sm:text-[22px]">
+          搜索建议
+        </h2>
+        <div class="mt-6 grid gap-4 md:grid-cols-3">
+          <article
+            v-for="item in searchTips"
+            :key="item.title"
+            class="rounded-[8px] border border-slate-100 bg-white p-4 shadow-sm dark:border-gray-700 dark:bg-gray-900"
+          >
+            <h3 class="text-[15px] font-semibold text-slate-900 dark:text-white">{{ item.title }}</h3>
+            <p class="mt-3 text-[13px] leading-6 text-slate-500 dark:text-slate-300">
+              {{ item.description }}
+            </p>
+          </article>
+        </div>
+      </section>
     </main>
 
     <footer id="site-footer" class="bg-white p-4 dark:bg-gray-800">
@@ -108,11 +193,26 @@ const currentYear = new Date().getFullYear()
 </template>
 
 <style scoped>
+.home-search-controls {
+  width: 700px;
+  max-width: calc(100vw - 72px);
+}
+
+.home-keyword-list {
+  width: 620px;
+  max-width: calc(100vw - 72px);
+}
+
 :deep(.el-input__inner) {
   height: 48px;
 }
 
 @media screen and (max-width: 768px) {
+  .home-search-controls,
+  .home-keyword-list {
+    width: calc(100vw - 72px) !important;
+  }
+
   :deep(.el-input__inner) {
     height: 37px;
   }
