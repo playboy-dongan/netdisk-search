@@ -16,7 +16,14 @@ export default defineNuxtConfig({
                 }
             ],
             link: [{ rel: 'icon', type: 'image/svg+xml', href: '/icon.svg' }],
-            script: []
+            script: [
+                {
+                    key: 'google-adsense',
+                    async: true,
+                    src: 'https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-2901994507892320',
+                    crossorigin: 'anonymous'
+                }
+            ]
         }
     },
     modules: [
