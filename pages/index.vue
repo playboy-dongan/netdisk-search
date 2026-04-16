@@ -1,5 +1,4 @@
 <script setup>
-import SiteDisclaimerBar from '~/components/common/SiteDisclaimerBar.vue'
 import SiteLegalLinks from '~/components/common/SiteLegalLinks.vue'
 import { siteConfig, siteDisclaimerText } from '~/utils/site'
 
@@ -76,10 +75,6 @@ const currentYear = new Date().getFullYear()
           <el-button type="primary" round @click="search(searchKeyword)">搜索</el-button>
         </client-only>
       </div>
-    </div>
-
-    <div class="mx-auto mt-[16px] max-w-[980px] px-[20px]">
-      <SiteDisclaimerBar />
     </div>
 
     <div class="mx-auto mt-[20px] max-w-[520px]">
