@@ -41,57 +41,59 @@ const currentYear = new Date().getFullYear()
 </script>
 
 <template>
-  <div class="min-h-screen bg-[#ffffff] pb-[220px] pt-[60px] dark:bg-gray-800">
-    <div class="mx-auto max-w-[1240px] px-[20px] text-right">
-      <client-only>
-        <el-button v-if="colorMode.preference === 'dark'" link @click="colorMode.preference = 'light'">
-          <img class="h-[20px] w-[20px]" src="@/assets/theme/entypo--light-up.svg" alt="light mode">
-        </el-button>
-        <el-button v-if="colorMode.preference === 'light'" link @click="colorMode.preference = 'dark'">
-          <img class="h-[20px] w-[20px]" src="@/assets/theme/icon-park-solid--dark-mode.svg" alt="dark mode">
-        </el-button>
-      </client-only>
-    </div>
-
-    <div class="mt-[80px] flex flex-row items-center justify-center gap-3">
-      <img class="h-[40px] w-[40px] sm:h-[60px] sm:w-[60px]" :src="siteConfig.logo" alt="logo">
-      <h1 class="text-[20px] font-serif font-bold dark:text-white sm:text-[28px]">{{ siteConfig.name }}</h1>
-    </div>
-
-    <div class="mx-auto mt-[20px] max-w-[1240px] px-[20px]">
-      <div class="mx-auto flex w-[80%] items-center gap-2 md:w-[700px]">
-        <div class="h-[40px] flex-1 overflow-hidden rounded-[50px] border border-slate-300 font-mono sm:h-[50px]">
-          <client-only>
-            <el-input
-              v-model="searchKeyword"
-              placeholder="输入关键词后回车或点击搜索"
-              @keydown.enter="search(searchKeyword)"
-              prefix-icon="Search"
-            />
-          </client-only>
-        </div>
-
+  <div class="flex min-h-screen flex-col bg-[#ffffff] dark:bg-gray-800">
+    <main id="home-search-area" class="flex-1 pb-10 pt-[60px]">
+      <div class="mx-auto max-w-[1240px] px-[20px] text-right">
         <client-only>
-          <el-button type="primary" round @click="search(searchKeyword)">搜索</el-button>
+          <el-button v-if="colorMode.preference === 'dark'" link @click="colorMode.preference = 'light'">
+            <img class="h-[20px] w-[20px]" src="@/assets/theme/entypo--light-up.svg" alt="light mode">
+          </el-button>
+          <el-button v-if="colorMode.preference === 'light'" link @click="colorMode.preference = 'dark'">
+            <img class="h-[20px] w-[20px]" src="@/assets/theme/icon-park-solid--dark-mode.svg" alt="dark mode">
+          </el-button>
         </client-only>
       </div>
-    </div>
 
-    <div class="mx-auto mt-[20px] max-w-[520px]">
-      <div class="flex flex-row flex-wrap justify-center gap-1">
-        <el-tag
-          v-for="keyword in hotKeywords"
-          :key="keyword"
-          class="mx-1 cursor-pointer"
-          type="info"
-          @click="search(keyword)"
-        >
-          {{ keyword }}
-        </el-tag>
+      <div class="mt-[80px] flex flex-row items-center justify-center gap-3">
+        <img class="h-[40px] w-[40px] sm:h-[60px] sm:w-[60px]" :src="siteConfig.logo" alt="logo">
+        <h1 class="text-[20px] font-serif font-bold dark:text-white sm:text-[28px]">{{ siteConfig.name }}</h1>
       </div>
-    </div>
 
-    <div class="fixed bottom-0 left-0 right-0 bg-white p-4 dark:bg-gray-800">
+      <div class="mx-auto mt-[20px] max-w-[1240px] px-[20px]">
+        <div class="mx-auto flex w-[80%] items-center gap-2 md:w-[700px]">
+          <div class="h-[40px] flex-1 overflow-hidden rounded-[50px] border border-slate-300 font-mono sm:h-[50px]">
+            <client-only>
+              <el-input
+                v-model="searchKeyword"
+                placeholder="输入关键词后回车或点击搜索"
+                @keydown.enter="search(searchKeyword)"
+                prefix-icon="Search"
+              />
+            </client-only>
+          </div>
+
+          <client-only>
+            <el-button type="primary" round @click="search(searchKeyword)">搜索</el-button>
+          </client-only>
+        </div>
+      </div>
+
+      <div class="mx-auto mt-[20px] max-w-[520px]">
+        <div class="flex flex-row flex-wrap justify-center gap-1">
+          <el-tag
+            v-for="keyword in hotKeywords"
+            :key="keyword"
+            class="mx-1 cursor-pointer"
+            type="info"
+            @click="search(keyword)"
+          >
+            {{ keyword }}
+          </el-tag>
+        </div>
+      </div>
+    </main>
+
+    <footer id="site-footer" class="bg-white p-4 dark:bg-gray-800">
       <div class="mx-auto flex max-w-[1240px] flex-col items-center gap-3">
         <SiteLegalLinks />
         <p class="text-center text-[11px] leading-6 text-slate-400 sm:text-[12px]">
@@ -101,7 +103,7 @@ const currentYear = new Date().getFullYear()
           © {{ currentYear }} {{ siteConfig.name }}
         </p>
       </div>
-    </div>
+    </footer>
   </div>
 </template>
 
