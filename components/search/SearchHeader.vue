@@ -1,4 +1,7 @@
 <script setup lang="ts">
+import { Search as SearchIcon } from 'lucide-vue-next'
+import { Button } from '~/components/ui/button'
+import { Input } from '~/components/ui/input'
 import { siteConfig } from '~/utils/site'
 
 const router = useRouter()
@@ -41,21 +44,17 @@ watch(() => props.keyword, (value) => {
           </div>
 
           <div class="header-search-control flex min-w-0 flex-1 items-center gap-2 md:max-w-[520px]">
-            <div class="min-w-0 flex-1 overflow-hidden rounded-[50px] border border-slate-300 font-mono">
-              <client-only>
-                <el-input
-                  v-model="searchKeyword"
-                  class="h-[30px]"
-                  placeholder="输入关键词后回车或点击搜索"
-                  @keydown.enter="search()"
-                  prefix-icon="Search"
-                />
-              </client-only>
+            <div class="relative min-w-0 flex-1">
+              <SearchIcon class="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+              <Input
+                v-model="searchKeyword"
+                class="h-10 rounded-full border-slate-200 bg-white pl-10 shadow-sm dark:bg-gray-900"
+                placeholder="输入关键词后回车或点击搜索"
+                @keydown.enter="search()"
+              />
             </div>
 
-            <client-only>
-              <el-button class="header-search-button shrink-0" type="primary" round @click="search()">搜索</el-button>
-            </client-only>
+            <Button class="header-search-button rounded-full px-6" @click="search()">搜索</Button>
           </div>
 
           <div class="hidden items-center md:absolute md:right-[20px] md:flex">
@@ -70,46 +69,13 @@ watch(() => props.keyword, (value) => {
           </div>
         </div>
 
-        <client-only>
-          <el-button class="mobile-search-button w-full" type="primary" round @click="search()">搜索</el-button>
-        </client-only>
+        <Button class="mobile-search-button w-full rounded-full" @click="search()">搜索</Button>
       </div>
     </div>
   </el-affix>
 </template>
 
 <style scoped lang="scss">
-:deep(.el-input__inner) {
-  height: 48px;
-}
-
-:deep(.el-input__wrapper) {
-  box-shadow: none;
-}
-
-:deep(.el-input-group__prepend) {
-  box-shadow: none;
-}
-
-:deep(.el-input) {
-  --el-input-focus-border: transparent;
-  --el-input-border-color: transparent;
-  --el-input-focus-border-color: transparent;
-  --el-input-hover-border-color: transparent;
-}
-
-:deep(.el-input-group--prepend .el-input-group__prepend .el-select .el-input.is-focus .el-input__wrapper) {
-  box-shadow: none !important;
-}
-
-:deep(.el-input-group--prepend .el-input-group__prepend .el-select .el-input .el-input__inner) {
-  text-align: center;
-}
-
-:deep(.el-select .el-input__wrapper.is-focus) {
-  box-shadow: none !important;
-}
-
 .mobile-search-button {
   display: none;
 }

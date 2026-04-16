@@ -349,7 +349,7 @@ onMounted(async () => {
           </ul>
         </div>
 
-        <div class="min-w-0 rounded-[8px] bg-white p-3 shadow dark:bg-gray-700/50 sm:p-4">
+        <div class="min-w-0">
           <disk-info-list
             :sources="combinedSources"
             :skeleton-loading="primaryLoading"

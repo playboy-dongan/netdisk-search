@@ -1,4 +1,8 @@
 <script setup lang="ts">
+import { Badge } from '~/components/ui/badge'
+import { Card, CardContent } from '~/components/ui/card'
+import { Skeleton } from '~/components/ui/skeleton'
+
 defineProps({
   sources: {
     type: Object,
@@ -59,33 +63,29 @@ const formatDate = (date: string) => {
 </script>
 
 <template>
-  <el-skeleton v-if="skeletonLoading" animated :count="skeletonCount">
-    <template #template>
-      <div
-        class="bg-white dark:bg-gray-600 shadow p-[14px] rounded-[6px] cursor-pointer mb-3
-        hover:bg-[#f5f5f5] hover:shadow-lg transition duration-300 ease-in-out"
-      >
-        <div class="flex flex-row gap-2 items-center">
-          <el-skeleton-item variant="image" style="width: 20px; height: 20px" />
-          <el-skeleton-item variant="text" style="width: 100px;" />
+  <div v-if="skeletonLoading" class="flex min-w-0 flex-col gap-3">
+    <Card v-for="i in skeletonCount" :key="`skeleton-${i}`" class="py-0">
+      <CardContent class="p-4">
+        <div class="flex items-center gap-2">
+          <Skeleton class="h-5 w-5 rounded-[6px]" />
+          <Skeleton class="h-4 w-32" />
         </div>
-        <div>
-          <el-skeleton-item variant="text" style="width: 100%;" />
+        <div class="mt-4 space-y-2">
+          <Skeleton class="h-3 w-full" />
+          <Skeleton class="h-3 w-11/12" />
         </div>
-        <div>
-          <el-skeleton-item variant="text" style="width: 100%;" />
-        </div>
-      </div>
-    </template>
-  </el-skeleton>
+      </CardContent>
+    </Card>
+  </div>
 
   <div v-else class="flex min-w-0 flex-col gap-3">
-      <template v-for="(item, i) in sources?.list" :key="`${item.link || item.doc_id || 'item'}-${i}`">
-        <div
-          class="min-w-0 bg-white dark:bg-gray-600 shadow p-[14px] rounded-[6px] cursor-pointer
-          hover:bg-[#f5f5f5] dark:hover:bg-gray-700 hover:shadow-lg transition duration-300 ease-in-out"
-          @click="handleOpenSourceLink(item.link)"
-        >
+      <Card
+        v-for="(item, i) in sources?.list"
+        :key="`${item.link || item.doc_id || 'item'}-${i}`"
+        class="min-w-0 cursor-pointer py-0 transition hover:-translate-y-0.5 hover:border-blue-200 hover:shadow-md dark:border-gray-700"
+        @click="handleOpenSourceLink(item.link)"
+      >
+        <CardContent class="p-4">
           <div class="flex min-w-0 flex-row gap-2 items-center">
             <img class="w-[20px]" v-if="item.disk_type === 'ALY'" src="@/assets/netdisk/aliyun.png" alt="aliyun">
             <img class="w-[20px]" v-if="item.disk_type === 'QUARK'" src="@/assets/netdisk/quark.png" alt="quark">
@@ -100,12 +100,12 @@ const formatDate = (date: string) => {
 
           <div class="flex min-w-0 flex-col items-start gap-2 text-[12px] text-slate-600 sm:flex-row sm:items-center sm:justify-between">
             <div class="flex flex-row items-center gap-2 flex-wrap">
-              <span v-if="item.disk_type" class="bg-blue-500 text-white px-[6px] py-[2px] rounded">
+              <Badge v-if="item.disk_type" class="rounded-[6px] bg-blue-500 text-white hover:bg-blue-500">
                 {{ formatDiskType(item.disk_type) }}
-              </span>
-              <span v-if="item.disk_pass" class="bg-purple-500 text-white px-[6px] py-[2px] rounded">
+              </Badge>
+              <Badge v-if="item.disk_pass" class="rounded-[6px] bg-violet-500 text-white hover:bg-violet-500">
                 {{ item.disk_pass }}
-              </span>
+              </Badge>
             </div>
             <div class="shrink-0">
               <span v-if="item.update_time" class="text-slate-600 px-[6px] py-[2px] rounded">
@@ -113,28 +113,21 @@ const formatDate = (date: string) => {
               </span>
             </div>
           </div>
-        </div>
-      </template>
+        </CardContent>
+      </Card>
 
-      <el-skeleton v-if="appendSkeletonCount > 0" animated :count="appendSkeletonCount">
-        <template #template>
-          <div
-            class="bg-white dark:bg-gray-600 shadow p-[14px] rounded-[6px] cursor-pointer mb-3
-            hover:bg-[#f5f5f5] hover:shadow-lg transition duration-300 ease-in-out"
-          >
-            <div class="flex flex-row gap-2 items-center">
-              <el-skeleton-item variant="image" style="width: 20px; height: 20px" />
-              <el-skeleton-item variant="text" style="width: 100px;" />
-            </div>
-            <div>
-              <el-skeleton-item variant="text" style="width: 100%;" />
-            </div>
-            <div>
-              <el-skeleton-item variant="text" style="width: 100%;" />
-            </div>
+      <Card v-for="i in appendSkeletonCount" :key="`append-skeleton-${i}`" class="py-0">
+        <CardContent class="p-4">
+          <div class="flex items-center gap-2">
+            <Skeleton class="h-5 w-5 rounded-[6px]" />
+            <Skeleton class="h-4 w-32" />
           </div>
-        </template>
-      </el-skeleton>
+          <div class="mt-4 space-y-2">
+            <Skeleton class="h-3 w-full" />
+            <Skeleton class="h-3 w-11/12" />
+          </div>
+        </CardContent>
+      </Card>
   </div>
 </template>
 

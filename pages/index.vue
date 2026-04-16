@@ -1,4 +1,7 @@
 <script setup>
+import { Button } from '~/components/ui/button'
+import { Card, CardContent } from '~/components/ui/card'
+import { Input } from '~/components/ui/input'
 import SiteLegalLinks from '~/components/common/SiteLegalLinks.vue'
 import aliImg from '@/assets/netdisk/aliyun.png'
 import bdyImg from '@/assets/netdisk/baidu.png'
@@ -92,20 +95,16 @@ const currentYear = new Date().getFullYear()
 
       <div class="mx-auto mt-[20px] max-w-[1240px] px-[20px]">
         <div class="home-search-controls mx-auto flex flex-col items-stretch gap-2 sm:flex-row sm:items-center">
-          <div class="h-[40px] min-w-0 flex-1 overflow-hidden rounded-[50px] border border-slate-300 font-mono sm:h-[50px]">
-            <client-only>
-              <el-input
-                v-model="searchKeyword"
-                placeholder="输入关键词后回车或点击搜索"
-                @keydown.enter="search(searchKeyword)"
-                prefix-icon="Search"
-              />
-            </client-only>
+          <div class="min-w-0 flex-1">
+            <Input
+              v-model="searchKeyword"
+              class="h-12 rounded-full border-slate-200 bg-white px-5 shadow-sm dark:bg-gray-900"
+              placeholder="输入关键词后回车或点击搜索"
+              @keydown.enter="search(searchKeyword)"
+            />
           </div>
 
-          <client-only>
-            <el-button class="w-full shrink-0 sm:w-auto" type="primary" round @click="search(searchKeyword)">搜索</el-button>
-          </client-only>
+          <Button class="h-12 w-full rounded-full px-8 sm:w-auto" @click="search(searchKeyword)">搜索</Button>
         </div>
       </div>
 
@@ -130,16 +129,22 @@ const currentYear = new Date().getFullYear()
           <NuxtLink
             v-for="item in diskEntrances"
             :key="item.title"
-            class="min-w-0 rounded-[8px] border border-slate-100 bg-white p-4 shadow-sm transition hover:border-blue-200 hover:shadow dark:border-gray-700 dark:bg-gray-900"
+            class="group min-w-0"
             :to="{ path: '/search', query: { keyword: item.keyword } }"
           >
-            <div class="flex items-center gap-3">
-              <img class="h-8 w-8 shrink-0" :src="item.image" :alt="item.title">
-              <h3 class="min-w-0 text-[15px] font-semibold text-slate-900 dark:text-white">{{ item.title }}</h3>
-            </div>
-            <p class="mt-3 text-[13px] leading-6 text-slate-500 dark:text-slate-300">
-              {{ item.description }}
-            </p>
+            <Card class="h-full border-slate-200 py-0 transition group-hover:-translate-y-0.5 group-hover:border-blue-200 group-hover:shadow-md dark:border-gray-700">
+              <CardContent class="p-4">
+                <div class="flex items-center gap-3">
+                  <span class="flex h-10 w-10 shrink-0 items-center justify-center rounded-[8px] bg-blue-50 dark:bg-blue-950/40">
+                    <img class="h-7 w-7" :src="item.image" :alt="item.title">
+                  </span>
+                  <h3 class="min-w-0 text-[15px] font-semibold text-slate-900 dark:text-white">{{ item.title }}</h3>
+                </div>
+                <p class="mt-3 text-[13px] leading-6 text-muted-foreground">
+                  {{ item.description }}
+                </p>
+              </CardContent>
+            </Card>
           </NuxtLink>
         </div>
       </section>
@@ -171,18 +176,10 @@ const currentYear = new Date().getFullYear()
   max-width: calc(100vw - 72px);
 }
 
-:deep(.el-input__inner) {
-  height: 48px;
-}
-
 @media screen and (max-width: 768px) {
   .home-search-controls,
   .home-keyword-list {
     width: calc(100vw - 72px) !important;
-  }
-
-  :deep(.el-input__inner) {
-    height: 37px;
   }
 }
 

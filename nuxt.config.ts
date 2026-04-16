@@ -26,14 +26,20 @@ export default defineNuxtConfig({
             ]
         }
     },
+    css: ['~/assets/css/shadcn.css'],
     modules: [
         '@element-plus/nuxt',
         '@nuxtjs/tailwindcss',
         '@nuxtjs/device',
         '@nuxtjs/i18n',
         '@nuxtjs/google-fonts',
-        '@nuxtjs/color-mode'
+        '@nuxtjs/color-mode',
+        'shadcn-nuxt'
     ],
+    shadcn: {
+        prefix: '',
+        componentDir: '@/components/ui'
+    },
     colorMode: {
         preference: 'light',
         classSuffix: ''
