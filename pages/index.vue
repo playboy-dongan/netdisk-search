@@ -91,15 +91,6 @@ const currentYear = new Date().getFullYear()
       </div>
     </div>
 
-    <div class="mx-auto mt-[24px] max-w-[1240px] px-[20px]">
-      <div class="mx-auto w-[80%] md:w-[700px]">
-        <AdPlaceholder
-          title="首页横幅广告位"
-          description="后续接入 Google AdSense 时，可以把这一块替换成响应式横幅广告代码。"
-        />
-      </div>
-    </div>
-
     <div class="fixed bottom-0 left-0 right-0 bg-white p-4 dark:bg-gray-800">
       <div class="mx-auto flex max-w-[1240px] flex-col items-center gap-3">
         <SiteLegalLinks />
