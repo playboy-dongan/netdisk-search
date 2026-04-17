@@ -35,8 +35,10 @@ type SearchPlan = {
 
 const FRESH_CACHE_TTL_MS = 5 * 60 * 1000
 const STALE_CACHE_TTL_MS = 30 * 60 * 1000
-const FAST_MODE_TIMEOUT_MS = 6000
-const DEEP_MODE_TIMEOUT_MS = 3500
+const FAST_MODE_TIMEOUT_MS = 9000
+const DEEP_MODE_TIMEOUT_MS = 12000
+const FAST_SEARCH_CONCURRENCY = 8
+const DEEP_SEARCH_CONCURRENCY = 20
 
 const globalCache = globalThis as typeof globalThis & {
     __NETDISK_SEARCH_CACHE__?: Map<string, CacheEntry>
@@ -77,14 +79,24 @@ const requestPansou = async (
     cloudTypes: string[],
     plan: SearchPlan,
 ) => {
+    const query: Record<string, string | number> = {
+        kw: keyword,
+        res: 'merged_by_type',
+        src: plan.src,
+        conc: plan.conc,
+        refresh: 'false',
+    }
+
+    if (cloudTypes.length) {
+        query.cloud_types = cloudTypes.join(',')
+    }
+
     return await $fetch<PansouSearchResponse>(`${pansouApiBase}/api/search`, {
         method: 'GET',
-        query: {
-            kw: keyword,
-            res: 'merged_by_type',
-            src: plan.src,
-            cloud_types: cloudTypes.length ? cloudTypes.join(',') : undefined,
-            conc: plan.conc,
+        query,
+        headers: {
+            accept: 'application/json,text/plain,*/*',
+            'user-agent': 'Cloudflare-Workers',
         },
         retry: 0,
         timeout: plan.timeout,
@@ -94,14 +106,12 @@ const requestPansou = async (
 const getSearchPlans = (engine: number): SearchPlan[] => {
     if (engine === DEEP_SEARCH_ENGINE) {
         return [
-            { src: 'all', conc: 1, timeout: DEEP_MODE_TIMEOUT_MS },
-            { src: 'tg', conc: 1, timeout: FAST_MODE_TIMEOUT_MS },
+            { src: 'all', conc: DEEP_SEARCH_CONCURRENCY, timeout: DEEP_MODE_TIMEOUT_MS },
         ]
     }
 
     return [
-        { src: 'tg', conc: 1, timeout: FAST_MODE_TIMEOUT_MS },
-        { src: 'all', conc: 1, timeout: DEEP_MODE_TIMEOUT_MS },
+        { src: 'tg', conc: FAST_SEARCH_CONCURRENCY, timeout: FAST_MODE_TIMEOUT_MS },
     ]
 }
 
@@ -185,7 +195,7 @@ export default defineEventHandler(async (event) => {
         return {
             code: 500,
             msg: engine === FAST_SEARCH_ENGINE
-                ? '首批搜索结果加载较慢，请稍后重试'
+                ? '搜索源响应较慢，请稍后重试'
                 : lastError || '补充搜索结果加载失败，请稍后再试',
         }
     } catch (error) {

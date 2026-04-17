@@ -8,6 +8,7 @@ type PansouItem = {
 
 export const FAST_SEARCH_ENGINE = 2
 export const DEEP_SEARCH_ENGINE = 4
+export const DEFAULT_CLOUD_TYPES = ['baidu', 'aliyun', 'quark', 'xunlei']
 
 const DEFAULT_PANSOU_API_BASE = 'https://so.252035.xyz'
 const MAX_KEYWORD_LENGTH = 50
@@ -92,7 +93,7 @@ export const clampPositiveNumber = (value: unknown, min: number, max: number, fa
 }
 
 export const mapCurrentTypeToCloudTypes = (type?: string) => {
-  return cloudTypeFilterMap[type || ''] || []
+  return cloudTypeFilterMap[type || ''] || DEFAULT_CLOUD_TYPES
 }
 
 export const transformMergedByTypeToLegacyList = (
