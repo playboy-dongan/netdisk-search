@@ -15,11 +15,14 @@ const getOrCreateSiteToken = (event: Parameters<typeof defineEventHandler>[0]) =
         return current
     }
 
+    const url = getRequestURL(event)
+    const forwardedProto = getHeader(event, 'x-forwarded-proto')
     const token = crypto.randomUUID().replaceAll('-', '')
+
     setCookie(event, SITE_TOKEN_COOKIE, token, {
         httpOnly: false,
         sameSite: 'lax',
-        secure: true,
+        secure: url.protocol === 'https:' || forwardedProto === 'https',
         path: '/',
         maxAge: SITE_TOKEN_MAX_AGE,
     })

@@ -213,7 +213,7 @@ const runSearch = async () => {
   primarySources.value = emptySources()
   deepSources.value = emptySources()
   primaryLoading.value = true
-  deepLoading.value = true
+  deepLoading.value = false
 
   try {
     const quickData = await fetchSearchSegment(QUICK_ENGINE, taskId)
@@ -233,6 +233,17 @@ const runSearch = async () => {
       primaryLoading.value = false
     }
   }
+}
+
+const loadDeepSearch = async () => {
+  const taskId = searchTaskId.value
+
+  if (!keyword.value || deepLoading.value) {
+    return
+  }
+
+  deepSources.value = emptySources()
+  deepLoading.value = true
 
   try {
     const deepData = await fetchSearchSegment(DEEP_ENGINE, taskId)
@@ -356,6 +367,16 @@ onMounted(async () => {
             :append-skeleton-count="appendSkeletonCount"
             @open-link="handleOpenSourceLink"
           />
+        </div>
+
+        <div
+          v-if="!primaryLoading && keyword"
+          class="flex flex-wrap items-center gap-3 rounded-[6px] bg-white p-4 shadow dark:bg-gray-700/50"
+        >
+          <el-button type="primary" plain :loading="deepLoading" @click="loadDeepSearch">
+            继续补充更多结果
+          </el-button>
+          <span class="text-xs text-slate-400 dark:text-slate-300">补充搜索会调用更慢的来源</span>
         </div>
 
         <el-empty
