@@ -31,14 +31,15 @@ type SearchPlan = {
     src: 'all' | 'tg'
     timeout: number
     delayMs?: number
+    name: 'fast' | 'fallback'
 }
 
 const FRESH_CACHE_TTL_MS = 5 * 60 * 1000
 const STALE_CACHE_TTL_MS = 30 * 60 * 1000
-const FAST_PRIMARY_TIMEOUT_MS = 3500
-const FAST_FALLBACK_TIMEOUT_MS = 5500
-const FAST_FALLBACK_DELAY_MS = 900
-const DEEP_MODE_TIMEOUT_MS = 10000
+const FAST_PRIMARY_TIMEOUT_MS = 2200
+const FAST_FALLBACK_TIMEOUT_MS = 5000
+const FAST_FALLBACK_DELAY_MS = 250
+const DEEP_MODE_TIMEOUT_MS = 9000
 
 const globalCache = globalThis as typeof globalThis & {
     __NETDISK_SEARCH_CACHE__?: Map<string, CacheEntry>
@@ -79,7 +80,7 @@ const setCachedResult = (cacheKey: string, data: LegacySearchData) => {
 }
 
 const getErrorMessage = (error: any) => {
-    return error?.data?.message || error?.message || 'Search request failed'
+    return error?.data?.message || error?.message || '搜索请求失败'
 }
 
 const waitForDelay = (delayMs: number, signal?: AbortSignal) => {
@@ -161,7 +162,7 @@ const runPlan = async (
     const response = await requestPansou(pansouApiBase, keyword, cloudTypes, plan, signal)
 
     if (response.code !== 0) {
-        throw new Error(response.message || 'Search source returned an invalid response')
+        throw new Error(response.message || '搜索源返回异常')
     }
 
     return transformMergedByTypeToLegacyList(
@@ -174,14 +175,33 @@ const runPlan = async (
 const getSearchPlans = (engine: number): SearchPlan[] => {
     if (engine === DEEP_SEARCH_ENGINE) {
         return [
-            { src: 'all', timeout: DEEP_MODE_TIMEOUT_MS },
+            { name: 'fallback', src: 'all', timeout: DEEP_MODE_TIMEOUT_MS },
         ]
     }
 
     return [
-        { src: 'tg', timeout: FAST_PRIMARY_TIMEOUT_MS },
-        { src: 'all', timeout: FAST_FALLBACK_TIMEOUT_MS, delayMs: FAST_FALLBACK_DELAY_MS },
+        { name: 'fast', src: 'tg', timeout: FAST_PRIMARY_TIMEOUT_MS },
+        { name: 'fallback', src: 'all', timeout: FAST_FALLBACK_TIMEOUT_MS, delayMs: FAST_FALLBACK_DELAY_MS },
     ]
+}
+
+const abortControllerSafely = (controller: AbortController | null) => {
+    if (!controller || controller.signal.aborted) {
+        return
+    }
+
+    controller.abort()
+}
+
+const abortOtherPlans = (
+    controllers: Array<{ name: SearchPlan['name'], controller: AbortController | null }>,
+    winner: SearchPlan['name'],
+) => {
+    for (const item of controllers) {
+        if (item.name !== winner) {
+            abortControllerSafely(item.controller)
+        }
+    }
 }
 
 const runFastSearchPlan = async (
@@ -192,72 +212,112 @@ const runFastSearchPlan = async (
     size: number,
     [primaryPlan, fallbackPlan]: SearchPlan[],
 ) => {
+    const primaryController = typeof AbortController !== 'undefined'
+        ? new AbortController()
+        : null
     const fallbackController = typeof AbortController !== 'undefined'
         ? new AbortController()
         : null
+    const planControllers = [
+        { name: primaryPlan.name, controller: primaryController },
+        { name: fallbackPlan?.name || 'fallback', controller: fallbackController },
+    ]
 
-    const fallbackPromise = fallbackPlan
-        ? runPlan(
-            pansouApiBase,
-            keyword,
-            cloudTypes,
-            page,
-            size,
-            fallbackPlan,
-            fallbackController?.signal,
-        )
-        : Promise.resolve(emptySearchData())
-
-    let primaryData: LegacySearchData | null = null
-    let lastError = ''
-    let hasSuccessfulResponse = false
-
-    try {
-        primaryData = await runPlan(
+    const planTasks = [
+        runPlan(
             pansouApiBase,
             keyword,
             cloudTypes,
             page,
             size,
             primaryPlan,
+            primaryController?.signal,
         )
-        hasSuccessfulResponse = true
-    } catch (error: any) {
-        lastError = getErrorMessage(error)
-    }
+            .then((data) => ({
+                name: primaryPlan.name,
+                success: true,
+                data,
+                error: '',
+            }))
+            .catch((error: any) => ({
+                name: primaryPlan.name,
+                success: false,
+                data: emptySearchData(),
+                error: getErrorMessage(error),
+            })),
+        fallbackPlan
+            ? runPlan(
+                pansouApiBase,
+                keyword,
+                cloudTypes,
+                page,
+                size,
+                fallbackPlan,
+                fallbackController?.signal,
+            )
+                .then((data) => ({
+                    name: fallbackPlan.name,
+                    success: true,
+                    data,
+                    error: '',
+                }))
+                .catch((error: any) => ({
+                    name: fallbackPlan.name,
+                    success: false,
+                    data: emptySearchData(),
+                    error: getErrorMessage(error),
+                }))
+            : Promise.resolve({
+                name: 'fallback' as const,
+                success: true,
+                data: emptySearchData(),
+                error: '',
+            }),
+    ]
 
-    if (primaryData?.total) {
-        fallbackController?.abort()
-        void fallbackPromise.catch(() => {})
+    const wrappedTasks = planTasks.map((task, index) =>
+        task.then((result) => ({
+            index,
+            result,
+        }))
+    )
+    const pendingTaskIndexes = new Set(wrappedTasks.map((_, index) => index))
 
-        return {
-            data: primaryData,
-            lastError,
-            hasSuccessfulResponse,
-        }
-    }
+    let firstSuccessfulEmptyData: LegacySearchData | null = null
+    let lastError = ''
+    let hasSuccessfulResponse = false
 
-    try {
-        const fallbackData = await fallbackPromise
-        hasSuccessfulResponse = true
+    while (pendingTaskIndexes.size) {
+        const { index, result } = await Promise.race(
+            Array.from(pendingTaskIndexes).map((taskIndex) => wrappedTasks[taskIndex])
+        )
 
-        if (fallbackData.total || !primaryData) {
-            return {
-                data: fallbackData,
-                lastError,
-                hasSuccessfulResponse,
+        pendingTaskIndexes.delete(index)
+
+        if (result.success) {
+            hasSuccessfulResponse = true
+
+            if (result.data.total > 0) {
+                abortOtherPlans(planControllers, result.name)
+
+                return {
+                    data: result.data,
+                    lastError,
+                    hasSuccessfulResponse,
+                }
             }
-        }
-    } catch (error: any) {
-        const fallbackError = getErrorMessage(error)
 
-        if (fallbackError !== 'Search aborted') {
-            lastError = fallbackError
+            firstSuccessfulEmptyData = firstSuccessfulEmptyData || result.data
+            continue
+        }
+
+        if (result.error !== 'Search aborted') {
+            lastError = result.error || lastError
         }
     }
 
     return {
-        data: primaryData || emptySearchData(),
+        data: firstSuccessfulEmptyData || emptySearchData(),
         lastError,
         hasSuccessfulResponse,
     }
@@ -350,15 +410,15 @@ export default defineEventHandler(async (event) => {
         return {
             code: 500,
             msg: engine === FAST_SEARCH_ENGINE
-                ? (lastError || 'Fast search timed out, please retry')
-                : (lastError || 'Deep search failed, please retry later'),
+                ? (lastError || '搜索源响应较慢，请稍后重试')
+                : (lastError || '补充搜索结果加载失败，请稍后再试'),
         }
     } catch (error) {
         console.log(error)
 
         return {
             code: 500,
-            msg: 'PanSou API is temporarily unavailable, please retry later.',
+            msg: 'PanSou API 暂时不可用，请稍后再试',
         }
     }
 })

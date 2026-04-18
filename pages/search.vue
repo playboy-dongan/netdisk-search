@@ -15,6 +15,7 @@ definePageMeta({
 const QUICK_ENGINE = 2
 const DEEP_ENGINE = 4
 const AUTO_DEEP_TRIGGER_TOTAL = 8
+const AUTO_DEEP_WAIT_MS = 700
 
 const router = useRouter()
 const route = useRoute()
@@ -35,32 +36,32 @@ const searchTaskId = ref(0)
 const autoDeepTaskId = ref(0)
 
 useSeoMeta({
-  title: () => `${keyword.value || 'Netdisk Resources'} Search Results`,
-  description: () => `Search ${keyword.value || 'netdisk resources'} on ${siteConfig.name} with Aliyun Drive, Baidu Netdisk, Quark, and Xunlei sources.`,
+  title: () => `${keyword.value || '网盘资源'} 搜索结果`,
+  description: () => `在 ${siteConfig.name} 中搜索 ${keyword.value || '网盘资源'}，支持阿里云盘、百度网盘、夸克网盘、迅雷网盘等多种来源。`,
 })
 
 const tabsOptions = [
   {
-    label: 'All',
+    label: '全部',
     value: ''
   },
   {
-    label: 'Aliyun',
+    label: '阿里',
     value: 'ALY',
     img: aliImg
   },
   {
-    label: 'Baidu',
+    label: '百度',
     value: 'BDY',
     img: bdyImg
   },
   {
-    label: 'Quark',
+    label: '夸克',
     value: 'QUARK',
     img: quarkImg
   },
   {
-    label: 'Xunlei',
+    label: '迅雷',
     value: 'XUNLEI',
     img: xunleiImg
   }
@@ -86,6 +87,10 @@ const uniqueByLink = (items = []) => {
 const normalizeSearchData = (data) => ({
   list: uniqueByLink(data?.list || []),
   total: Number(data?.total || 0),
+})
+
+const wait = (delay) => new Promise((resolve) => {
+  setTimeout(resolve, delay)
 })
 
 const buildDeepSources = (deepData, quickData) => {
@@ -174,7 +179,7 @@ const fetchSearchSegment = async (engine, taskId) => {
   })
 
   if (res.code !== 200) {
-    throw new Error(res.msg || 'Search source is unavailable')
+    throw new Error(res.msg || '搜索源暂时不可用，请稍后再试')
   }
 
   return normalizeSearchData(res.data)
@@ -240,6 +245,11 @@ const runSearch = async () => {
   deepSources.value = emptySources()
   primaryLoading.value = true
   deepLoading.value = false
+  void wait(AUTO_DEEP_WAIT_MS).then(() => {
+    if (searchTaskId.value === taskId && primaryLoading.value) {
+      triggerAutoDeepSearch(taskId, emptySources(), true)
+    }
+  })
 
   try {
     const quickData = await fetchSearchSegment(QUICK_ENGINE, taskId)
@@ -350,7 +360,7 @@ onMounted(async () => {
                 @click="handleChangeExact(exact)"
                 type="success"
               >
-                <span class="text-[10px] md:text-[14px]">Exact</span>
+                <span class="text-[10px] md:text-[14px]">精确</span>
               </el-check-tag>
             </li>
           </ul>
@@ -370,14 +380,14 @@ onMounted(async () => {
           class="flex flex-wrap items-center gap-3 rounded-[6px] bg-white p-4 shadow dark:bg-gray-700/50"
         >
           <el-button type="primary" plain :loading="deepLoading" @click="loadDeepSearch()">
-            Load More Results
+            继续补充更多结果
           </el-button>
-          <span class="text-xs text-slate-400 dark:text-slate-300">When the first batch is thin, a broader background search starts automatically.</span>
+          <span class="text-xs text-slate-400 dark:text-slate-300">首批结果偏少或主源偏慢时，会自动补充更广的来源</span>
         </div>
 
         <el-empty
           v-if="!primaryLoading && !deepLoading && !hasAnyResult"
-          description="No results yet. Try a different keyword, switch the source type, or retry later."
+          description="暂时没有搜索结果，请尝试更换关键词、切换资源类型，或者稍后再试。"
         />
 
         <div class="flex justify-center py-[20px]">
@@ -397,7 +407,7 @@ onMounted(async () => {
       <div class="min-w-0 p-[20px] sm:py-[20px]">
         <div class="min-w-0 rounded-[6px] bg-white p-[14px] shadow dark:bg-transparent dark:shadow-gray-500">
           <div class="flex min-w-0 flex-row items-center justify-between gap-2">
-            <span class="text-[14px] font-bold">Trending Searches</span>
+            <span class="text-[14px] font-bold">热门搜索</span>
             <div>
               <el-button link icon="refresh" @click="getLatestSourcesData(1, 10)"></el-button>
               <el-button link icon="more" @click="handleGoToLatestSources()"></el-button>
