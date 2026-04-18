@@ -39,6 +39,37 @@ const canonicalUrl = computed(() => {
   return url.toString()
 })
 
+const structuredData = computed(() =>
+  JSON.stringify(
+    [
+      {
+        '@context': 'https://schema.org',
+        '@type': 'WebSite',
+        name: siteConfig.brandTitle,
+        alternateName: [siteConfig.name, siteConfig.brandName],
+        url: siteConfig.domain,
+        description: siteConfig.description,
+        potentialAction: {
+          '@type': 'SearchAction',
+          target: `${siteConfig.domain}/search?keyword={search_term_string}`,
+          'query-input': 'required name=search_term_string',
+        },
+      },
+      {
+        '@context': 'https://schema.org',
+        '@type': 'Organization',
+        name: siteConfig.brandTitle,
+        alternateName: [siteConfig.name, siteConfig.brandName],
+        url: siteConfig.domain,
+        logo: `${siteConfig.domain}${siteConfig.logo}`,
+        email: siteConfig.contactEmail,
+      },
+    ],
+    null,
+    0,
+  )
+)
+
 useHead({
   link: [
     {
@@ -66,12 +97,24 @@ useHead({
     {
       key: 'og:site_name',
       property: 'og:site_name',
-      content: siteConfig.name,
+      content: siteConfig.brandTitle,
     },
     {
       key: 'twitter:card',
       name: 'twitter:card',
       content: 'summary',
+    },
+    {
+      key: 'apple-mobile-web-app-title',
+      name: 'apple-mobile-web-app-title',
+      content: siteConfig.brandTitle,
+    },
+  ],
+  script: [
+    {
+      key: 'structured-data',
+      type: 'application/ld+json',
+      children: structuredData,
     },
   ],
 })

@@ -16,8 +16,10 @@ definePageMeta({
 useSeoMeta({
   title: '免费网盘资源搜索',
   description: siteConfig.description,
-  ogTitle: siteConfig.name,
+  ogTitle: siteConfig.brandTitle,
   ogDescription: siteConfig.description,
+  twitterTitle: siteConfig.brandTitle,
+  twitterDescription: siteConfig.description,
 })
 
 const searchKeyword = ref('')
@@ -80,16 +82,16 @@ const currentYear = new Date().getFullYear()
       <div class="mx-auto max-w-[1240px] px-[20px] text-right">
         <client-only>
           <el-button v-if="colorMode.preference === 'dark'" link @click="colorMode.preference = 'light'">
-            <img class="h-[20px] w-[20px]" src="@/assets/theme/entypo--light-up.svg" alt="light mode">
+            <img class="h-[20px] w-[20px]" src="@/assets/theme/entypo--light-up.svg" :alt="`${siteConfig.brandName} light mode`">
           </el-button>
           <el-button v-if="colorMode.preference === 'light'" link @click="colorMode.preference = 'dark'">
-            <img class="h-[20px] w-[20px]" src="@/assets/theme/icon-park-solid--dark-mode.svg" alt="dark mode">
+            <img class="h-[20px] w-[20px]" src="@/assets/theme/icon-park-solid--dark-mode.svg" :alt="`${siteConfig.brandName} dark mode`">
           </el-button>
         </client-only>
       </div>
 
       <div class="mt-[72px] flex flex-row items-center justify-center gap-3 sm:mt-[80px]">
-        <img class="h-[40px] w-[40px] sm:h-[60px] sm:w-[60px]" :src="siteConfig.logo" alt="logo">
+        <img class="h-[40px] w-[40px] sm:h-[60px] sm:w-[60px]" :src="siteConfig.logo" :alt="`${siteConfig.brandTitle} logo`">
         <h1 class="text-[20px] font-serif font-bold dark:text-white sm:text-[28px]">{{ siteConfig.name }}</h1>
       </div>
 
@@ -148,7 +150,6 @@ const currentYear = new Date().getFullYear()
           </NuxtLink>
         </div>
       </section>
-
     </main>
 
     <footer id="site-footer" class="bg-white p-4 dark:bg-gray-800">
@@ -158,7 +159,7 @@ const currentYear = new Date().getFullYear()
           {{ siteDisclaimerText }}
         </p>
         <p class="text-center text-[11px] text-slate-300 dark:text-slate-500">
-          © {{ currentYear }} {{ siteConfig.name }}
+          © {{ currentYear }} {{ siteConfig.brandTitle }}
         </p>
       </div>
     </footer>
