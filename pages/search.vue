@@ -1,6 +1,6 @@
 <script setup>
-import SearchHeader from "~/components/search/SearchHeader.vue";
-import DiskInfoList from "~/components/diskInfoList.vue";
+import SearchHeader from '~/components/search/SearchHeader.vue'
+import DiskInfoList from '~/components/diskInfoList.vue'
 import SiteDisclaimerBar from '~/components/common/SiteDisclaimerBar.vue'
 import aliImg from '@/assets/netdisk/aliyun.png'
 import quarkImg from '@/assets/netdisk/quark.png'
@@ -14,8 +14,7 @@ definePageMeta({
 
 const QUICK_ENGINE = 2
 const DEEP_ENGINE = 4
-const SEARCH_RETRY_COUNT = 2
-const SEARCH_RETRY_DELAY = 350
+const AUTO_DEEP_TRIGGER_TOTAL = 8
 
 const router = useRouter()
 const route = useRoute()
@@ -33,34 +32,35 @@ const deepLoading = ref(false)
 const latestSourcesData = ref([])
 const latestSkeletonLoading = ref(true)
 const searchTaskId = ref(0)
+const autoDeepTaskId = ref(0)
 
 useSeoMeta({
-  title: () => `${keyword.value || '网盘资源'} 搜索结果`,
-  description: () => `在 ${siteConfig.name} 中搜索 ${keyword.value || '网盘资源'}，支持阿里云盘、百度网盘、夸克网盘、迅雷网盘等多种来源。`,
+  title: () => `${keyword.value || 'Netdisk Resources'} Search Results`,
+  description: () => `Search ${keyword.value || 'netdisk resources'} on ${siteConfig.name} with Aliyun Drive, Baidu Netdisk, Quark, and Xunlei sources.`,
 })
 
 const tabsOptions = [
   {
-    label: '所有',
+    label: 'All',
     value: ''
   },
   {
-    label: '阿里',
+    label: 'Aliyun',
     value: 'ALY',
     img: aliImg
   },
   {
-    label: '百度',
+    label: 'Baidu',
     value: 'BDY',
     img: bdyImg
   },
   {
-    label: '夸克',
+    label: 'Quark',
     value: 'QUARK',
     img: quarkImg
   },
   {
-    label: '迅雷',
+    label: 'Xunlei',
     value: 'XUNLEI',
     img: xunleiImg
   }
@@ -98,10 +98,6 @@ const buildDeepSources = (deepData, quickData) => {
   }
 }
 
-const wait = (delay) => new Promise((resolve) => {
-  setTimeout(resolve, delay)
-})
-
 const combinedSources = computed(() => {
   const list = uniqueByLink([
     ...(primarySources.value?.list || []),
@@ -126,6 +122,10 @@ const appendSkeletonCount = computed(() => {
   return 10
 })
 
+const hasAnyResult = computed(() => {
+  return Boolean(combinedSources.value.list.length)
+})
+
 const handleOpenSourceLink = (link) => {
   if (!link) {
     return
@@ -141,7 +141,7 @@ const handleOpenLatestSourceLink = async (item) => {
   }
 
   const res = await $fetch('/api/sources/hh/doc', {
-    method: "POST",
+    method: 'POST',
     headers: getApiHeaders(),
     body: {
       engine: QUICK_ENGINE,
@@ -154,7 +154,11 @@ const handleOpenLatestSourceLink = async (item) => {
   }
 }
 
-const fetchSearchSegmentOnce = async (engine) => {
+const fetchSearchSegment = async (engine, taskId) => {
+  if (searchTaskId.value !== taskId) {
+    throw new Error('Search task expired')
+  }
+
   const res = await $fetch('/api/sources/hh/search', {
     method: 'POST',
     headers: getApiHeaders(),
@@ -163,81 +167,24 @@ const fetchSearchSegmentOnce = async (engine) => {
       q: keyword.value,
       page: page.value,
       size: 10,
-      time: "",
+      time: '',
       type: currentTabValue.value,
       exact: exact.value
     }
   })
 
   if (res.code !== 200) {
-    throw new Error(res.msg || '搜索源暂时不可用，请稍后再试')
+    throw new Error(res.msg || 'Search source is unavailable')
   }
 
   return normalizeSearchData(res.data)
 }
 
-const fetchSearchSegment = async (engine, taskId) => {
-  let lastError
-
-  for (let attempt = 0; attempt <= SEARCH_RETRY_COUNT; attempt++) {
-    if (searchTaskId.value !== taskId) {
-      throw new Error('搜索已更新')
-    }
-
-    try {
-      return await fetchSearchSegmentOnce(engine)
-    } catch (error) {
-      lastError = error
-
-      if (attempt < SEARCH_RETRY_COUNT) {
-        await wait(SEARCH_RETRY_DELAY * (attempt + 1))
-      }
-    }
-  }
-
-  throw lastError
+const shouldAutoLoadDeepSearch = (quickData) => {
+  return (quickData?.list?.length || 0) < AUTO_DEEP_TRIGGER_TOTAL
 }
 
-const runSearch = async () => {
-  const taskId = searchTaskId.value + 1
-  searchTaskId.value = taskId
-
-  if (!keyword.value) {
-    primarySources.value = emptySources()
-    deepSources.value = emptySources()
-    primaryLoading.value = false
-    deepLoading.value = false
-    return
-  }
-
-  primarySources.value = emptySources()
-  deepSources.value = emptySources()
-  primaryLoading.value = true
-  deepLoading.value = false
-
-  try {
-    const quickData = await fetchSearchSegment(QUICK_ENGINE, taskId)
-    if (searchTaskId.value !== taskId) {
-      return
-    }
-
-    primarySources.value = quickData
-  } catch (error) {
-    if (searchTaskId.value !== taskId) {
-      return
-    }
-
-    primarySources.value = emptySources()
-  } finally {
-    if (searchTaskId.value === taskId) {
-      primaryLoading.value = false
-    }
-  }
-}
-
-const loadDeepSearch = async () => {
-  const taskId = searchTaskId.value
-
+const loadDeepSearch = async (taskId = searchTaskId.value) => {
   if (!keyword.value || deepLoading.value) {
     return
   }
@@ -259,6 +206,59 @@ const loadDeepSearch = async () => {
   } finally {
     if (searchTaskId.value === taskId) {
       deepLoading.value = false
+    }
+  }
+}
+
+const triggerAutoDeepSearch = (taskId, quickData, force = false) => {
+  if (searchTaskId.value !== taskId || deepLoading.value || autoDeepTaskId.value === taskId) {
+    return
+  }
+
+  if (!force && !shouldAutoLoadDeepSearch(quickData)) {
+    return
+  }
+
+  autoDeepTaskId.value = taskId
+  void loadDeepSearch(taskId)
+}
+
+const runSearch = async () => {
+  const taskId = searchTaskId.value + 1
+  searchTaskId.value = taskId
+  autoDeepTaskId.value = 0
+
+  if (!keyword.value) {
+    primarySources.value = emptySources()
+    deepSources.value = emptySources()
+    primaryLoading.value = false
+    deepLoading.value = false
+    return
+  }
+
+  primarySources.value = emptySources()
+  deepSources.value = emptySources()
+  primaryLoading.value = true
+  deepLoading.value = false
+
+  try {
+    const quickData = await fetchSearchSegment(QUICK_ENGINE, taskId)
+    if (searchTaskId.value !== taskId) {
+      return
+    }
+
+    primarySources.value = quickData
+    triggerAutoDeepSearch(taskId, quickData)
+  } catch (error) {
+    if (searchTaskId.value !== taskId) {
+      return
+    }
+
+    primarySources.value = emptySources()
+    triggerAutoDeepSearch(taskId, emptySources(), true)
+  } finally {
+    if (searchTaskId.value === taskId) {
+      primaryLoading.value = false
     }
   }
 }
@@ -315,10 +315,6 @@ const handleGoToLatestSources = () => {
   router.push({ path: '/latest-sources' })
 }
 
-const hasAnyResult = computed(() => {
-  return Boolean(combinedSources.value.list.length)
-})
-
 onMounted(async () => {
   await Promise.all([
     runSearch(),
@@ -354,14 +350,14 @@ onMounted(async () => {
                 @click="handleChangeExact(exact)"
                 type="success"
               >
-                <span class="text-[10px] md:text-[14px]">精确搜索</span>
+                <span class="text-[10px] md:text-[14px]">Exact</span>
               </el-check-tag>
             </li>
           </ul>
         </div>
 
         <div class="min-w-0">
-          <disk-info-list
+          <DiskInfoList
             :sources="combinedSources"
             :skeleton-loading="primaryLoading"
             :append-skeleton-count="appendSkeletonCount"
@@ -373,15 +369,15 @@ onMounted(async () => {
           v-if="!primaryLoading && keyword"
           class="flex flex-wrap items-center gap-3 rounded-[6px] bg-white p-4 shadow dark:bg-gray-700/50"
         >
-          <el-button type="primary" plain :loading="deepLoading" @click="loadDeepSearch">
-            继续补充更多结果
+          <el-button type="primary" plain :loading="deepLoading" @click="loadDeepSearch()">
+            Load More Results
           </el-button>
-          <span class="text-xs text-slate-400 dark:text-slate-300">补充搜索会调用更慢的来源</span>
+          <span class="text-xs text-slate-400 dark:text-slate-300">When the first batch is thin, a broader background search starts automatically.</span>
         </div>
 
         <el-empty
           v-if="!primaryLoading && !deepLoading && !hasAnyResult"
-          description="暂时没有搜索结果，请尝试更换关键词、切换资源类型，或者稍后再试。"
+          description="No results yet. Try a different keyword, switch the source type, or retry later."
         />
 
         <div class="flex justify-center py-[20px]">
@@ -401,7 +397,7 @@ onMounted(async () => {
       <div class="min-w-0 p-[20px] sm:py-[20px]">
         <div class="min-w-0 rounded-[6px] bg-white p-[14px] shadow dark:bg-transparent dark:shadow-gray-500">
           <div class="flex min-w-0 flex-row items-center justify-between gap-2">
-            <span class="text-[14px] font-bold">热门搜索</span>
+            <span class="text-[14px] font-bold">Trending Searches</span>
             <div>
               <el-button link icon="refresh" @click="getLatestSourcesData(1, 10)"></el-button>
               <el-button link icon="more" @click="handleGoToLatestSources()"></el-button>
@@ -412,8 +408,7 @@ onMounted(async () => {
             <el-skeleton animated :loading="latestSkeletonLoading" :count="10">
               <template #template>
                 <div
-                  class="mb-3 min-w-0 cursor-pointer rounded-[6px] bg-white p-[14px] shadow
-                  transition duration-300 ease-in-out hover:bg-[#f5f5f5] hover:shadow-lg dark:bg-gray-600"
+                  class="mb-3 min-w-0 cursor-pointer rounded-[6px] bg-white p-[14px] shadow transition duration-300 ease-in-out hover:bg-[#f5f5f5] hover:shadow-lg dark:bg-gray-600"
                 >
                   <div class="flex min-w-0 flex-row items-center gap-2">
                     <el-skeleton-item variant="image" style="width: 20px; height: 20px" />
@@ -426,8 +421,7 @@ onMounted(async () => {
                 <div
                   v-for="(item, i) in latestSourcesData?.list ? latestSourcesData?.list : latestSourcesData"
                   :key="i"
-                  class="min-w-0 cursor-pointer rounded-[6px] bg-white p-[14px] shadow transition duration-300 ease-in-out
-                  hover:bg-[#f5f5f5] hover:shadow-lg dark:bg-gray-600 dark:hover:bg-gray-700"
+                  class="min-w-0 cursor-pointer rounded-[6px] bg-white p-[14px] shadow transition duration-300 ease-in-out hover:bg-[#f5f5f5] hover:shadow-lg dark:bg-gray-600 dark:hover:bg-gray-700"
                   @click="handleOpenLatestSourceLink(item)"
                 >
                   <div class="flex min-w-0 flex-row items-center gap-2">
