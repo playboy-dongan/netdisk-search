@@ -16,6 +16,7 @@ const QUICK_ENGINE = 2
 const DEEP_ENGINE = 4
 const AUTO_DEEP_TRIGGER_TOTAL = 8
 const AUTO_DEEP_WAIT_MS = 700
+const QUICK_SEARCH_PLANS = ['fast_tg', 'plugin_labi', 'plugin_pansearch']
 
 const router = useRouter()
 const route = useRoute()
@@ -29,6 +30,7 @@ const exact = ref(false)
 const primarySources = ref({})
 const deepSources = ref({})
 const primaryLoading = ref(true)
+const primaryPendingCount = ref(0)
 const deepLoading = ref(false)
 const latestSourcesData = ref([])
 const latestSkeletonLoading = ref(true)
@@ -89,6 +91,22 @@ const normalizeSearchData = (data) => ({
   total: Number(data?.total || 0),
 })
 
+const mergeSearchData = (currentData, incomingData) => {
+  const mergedList = uniqueByLink([
+    ...(currentData?.list || []),
+    ...(incomingData?.list || [])
+  ])
+
+  return {
+    list: mergedList,
+    total: Math.max(
+      Number(currentData?.total || 0),
+      Number(incomingData?.total || 0),
+      mergedList.length
+    ),
+  }
+}
+
 const wait = (delay) => new Promise((resolve) => {
   setTimeout(resolve, delay)
 })
@@ -120,11 +138,19 @@ const combinedSources = computed(() => {
 })
 
 const appendSkeletonCount = computed(() => {
-  if (primaryLoading.value || !deepLoading.value || !keyword.value) {
+  if (primaryLoading.value || !keyword.value) {
     return 0
   }
 
-  return 10
+  if (primaryPendingCount.value > 0) {
+    return Math.min(primaryPendingCount.value * 2, 6)
+  }
+
+  if (deepLoading.value) {
+    return 10
+  }
+
+  return 0
 })
 
 const hasAnyResult = computed(() => {
@@ -159,7 +185,7 @@ const handleOpenLatestSourceLink = async (item) => {
   }
 }
 
-const fetchSearchSegment = async (engine, taskId) => {
+const fetchSearchSegment = async (engine, taskId, plan = '') => {
   if (searchTaskId.value !== taskId) {
     throw new Error('Search task expired')
   }
@@ -174,7 +200,8 @@ const fetchSearchSegment = async (engine, taskId) => {
       size: 10,
       time: '',
       type: currentTabValue.value,
-      exact: exact.value
+      exact: exact.value,
+      plan
     }
   })
 
@@ -204,6 +231,9 @@ const loadDeepSearch = async (taskId = searchTaskId.value) => {
     }
 
     deepSources.value = buildDeepSources(deepData, primarySources.value)
+    if (deepSources.value?.list?.length) {
+      primaryLoading.value = false
+    }
   } catch (error) {
     if (searchTaskId.value === taskId) {
       deepSources.value = emptySources()
@@ -237,6 +267,7 @@ const runSearch = async () => {
     primarySources.value = emptySources()
     deepSources.value = emptySources()
     primaryLoading.value = false
+    primaryPendingCount.value = 0
     deepLoading.value = false
     return
   }
@@ -244,33 +275,51 @@ const runSearch = async () => {
   primarySources.value = emptySources()
   deepSources.value = emptySources()
   primaryLoading.value = true
+  primaryPendingCount.value = QUICK_SEARCH_PLANS.length
   deepLoading.value = false
   void wait(AUTO_DEEP_WAIT_MS).then(() => {
-    if (searchTaskId.value === taskId && primaryLoading.value) {
-      triggerAutoDeepSearch(taskId, emptySources(), true)
+    if (searchTaskId.value === taskId && shouldAutoLoadDeepSearch(primarySources.value)) {
+      triggerAutoDeepSearch(taskId, primarySources.value, true)
     }
   })
 
-  try {
-    const quickData = await fetchSearchSegment(QUICK_ENGINE, taskId)
-    if (searchTaskId.value !== taskId) {
-      return
-    }
+  const quickSearchTasks = QUICK_SEARCH_PLANS.map(async (plan) => {
+    try {
+      const quickData = await fetchSearchSegment(QUICK_ENGINE, taskId, plan)
+      if (searchTaskId.value !== taskId) {
+        return
+      }
 
-    primarySources.value = quickData
-    triggerAutoDeepSearch(taskId, quickData)
-  } catch (error) {
-    if (searchTaskId.value !== taskId) {
-      return
-    }
+      if (quickData?.list?.length) {
+        primarySources.value = mergeSearchData(primarySources.value, quickData)
+        primaryLoading.value = false
 
-    primarySources.value = emptySources()
-    triggerAutoDeepSearch(taskId, emptySources(), true)
-  } finally {
-    if (searchTaskId.value === taskId) {
-      primaryLoading.value = false
+        if (shouldAutoLoadDeepSearch(primarySources.value)) {
+          triggerAutoDeepSearch(taskId, primarySources.value)
+        }
+      }
+    } catch (error) {
+      if (searchTaskId.value !== taskId) {
+        return
+      }
+    } finally {
+      if (searchTaskId.value !== taskId) {
+        return
+      }
+
+      primaryPendingCount.value = Math.max(primaryPendingCount.value - 1, 0)
+
+      if (!primaryPendingCount.value) {
+        primaryLoading.value = false
+
+        if (!hasAnyResult.value || shouldAutoLoadDeepSearch(primarySources.value)) {
+          triggerAutoDeepSearch(taskId, primarySources.value, true)
+        }
+      }
     }
-  }
+  })
+
+  await Promise.allSettled(quickSearchTasks)
 }
 
 const search = async (value) => {

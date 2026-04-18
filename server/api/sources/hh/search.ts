@@ -193,6 +193,14 @@ const getSearchPlans = (engine: number): SearchPlan[] => {
     ]
 }
 
+const findSearchPlan = (engine: number, planName?: string) => {
+    if (!planName) {
+        return null
+    }
+
+    return getSearchPlans(engine).find((plan) => plan.name === planName) || null
+}
+
 const abortControllerSafely = (controller: AbortController | null) => {
     if (!controller || controller.signal.aborted) {
         return
@@ -314,15 +322,25 @@ export default defineEventHandler(async (event) => {
         }
 
         const engine = normalizeEngine(Number(body.engine))
+        const planName = typeof body.plan === 'string' ? body.plan.trim() : ''
+        const selectedPlan = findSearchPlan(engine, planName)
         const cloudTypes = mapCurrentTypeToCloudTypes(body.type)
         const pansouApiBase = getPansouApiBase()
         const cacheKey = buildCacheKey({
             engine,
+            plan: planName,
             keyword,
             page,
             size,
             type: body.type || '',
         })
+
+        if (planName && !selectedPlan) {
+            return {
+                code: 400,
+                msg: '无效的搜索来源',
+            }
+        }
 
         const freshCache = getCachedResult(cacheKey, FRESH_CACHE_TTL_MS)
         if (freshCache) {
@@ -338,7 +356,21 @@ export default defineEventHandler(async (event) => {
         let lastError = ''
         let hasSuccessfulResponse = false
 
-        if (engine === FAST_SEARCH_ENGINE) {
+        if (selectedPlan) {
+            try {
+                data = await runPlan(
+                    pansouApiBase,
+                    keyword,
+                    cloudTypes,
+                    page,
+                    size,
+                    selectedPlan,
+                )
+                hasSuccessfulResponse = true
+            } catch (error: any) {
+                lastError = getErrorMessage(error)
+            }
+        } else if (engine === FAST_SEARCH_ENGINE) {
             const fastSearchResult = await runFastSearchPlan(
                 pansouApiBase,
                 keyword,
