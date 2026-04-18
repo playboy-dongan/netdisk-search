@@ -2,6 +2,19 @@ import { siteConfig } from './utils/site'
 
 const siteUrl = siteConfig.domain.replace(/\/$/, '')
 const shareImageUrl = `${siteUrl}/og-image.png`
+const cloudflareWebAnalyticsToken =
+    process.env.NUXT_PUBLIC_CLOUDFLARE_WEB_ANALYTICS_TOKEN || process.env.CLOUDFLARE_WEB_ANALYTICS_TOKEN || ''
+const cloudflareWebAnalyticsScript = cloudflareWebAnalyticsToken
+    ? [
+        {
+            key: 'cloudflare-web-analytics',
+            defer: true,
+            src: 'https://static.cloudflareinsights.com/beacon.min.js',
+            'data-cf-beacon': JSON.stringify({ token: cloudflareWebAnalyticsToken }),
+            tagPosition: 'bodyClose'
+        }
+    ]
+    : []
 
 export default defineNuxtConfig({
     devtools: { enabled: false },
@@ -43,7 +56,8 @@ export default defineNuxtConfig({
                     async: true,
                     src: 'https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-2901994507892320',
                     crossorigin: 'anonymous'
-                }
+                },
+                ...cloudflareWebAnalyticsScript
             ]
         }
     },
