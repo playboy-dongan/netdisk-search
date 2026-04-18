@@ -2,8 +2,11 @@ import { siteConfig } from './utils/site'
 
 const siteUrl = siteConfig.domain.replace(/\/$/, '')
 const shareImageUrl = `${siteUrl}/og-image.png`
+const defaultCloudflareWebAnalyticsToken = '7b6603cb63f74f2e835ad2dd7fc1e8eb'
 const cloudflareWebAnalyticsToken =
-    process.env.NUXT_PUBLIC_CLOUDFLARE_WEB_ANALYTICS_TOKEN || process.env.CLOUDFLARE_WEB_ANALYTICS_TOKEN || ''
+    process.env.NUXT_PUBLIC_CLOUDFLARE_WEB_ANALYTICS_TOKEN ||
+    process.env.CLOUDFLARE_WEB_ANALYTICS_TOKEN ||
+    defaultCloudflareWebAnalyticsToken
 const cloudflareWebAnalyticsScript = cloudflareWebAnalyticsToken
     ? [
         {
