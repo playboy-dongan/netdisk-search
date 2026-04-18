@@ -90,6 +90,27 @@ const escapeHtml = (value: string) => value
   .replaceAll('"', '&quot;')
   .replaceAll("'", '&#39;')
 
+const mojibakePattern = /[À-ÿ]/
+const cjkPattern = /[\u3400-\u9FFF]/
+
+const fixMojibake = (value?: string) => {
+  if (!value || !mojibakePattern.test(value)) {
+    return value || ''
+  }
+
+  try {
+    const decoded = Buffer.from(value, 'latin1').toString('utf8')
+
+    if (!decoded || decoded.includes('\uFFFD') || !cjkPattern.test(decoded)) {
+      return value
+    }
+
+    return decoded
+  } catch {
+    return value
+  }
+}
+
 const normalizeDate = (value?: string) => {
   if (!value || value === '0001-01-01T00:00:00Z') {
     return ''
@@ -163,8 +184,8 @@ export const transformMergedByTypeToLegacyList = (
 ) => {
   const flatList = Object.entries(mergedByType || {}).flatMap(([cloudType, items]) => {
     return (items || []).filter((item) => !isInvalidResource(item)).map((item, index) => {
-      const safeTitle = escapeHtml(item.note || item.url || `资源 ${index + 1}`)
-      const safeSource = item.source ? escapeHtml(item.source) : 'PanSou'
+      const safeTitle = escapeHtml(fixMojibake(item.note) || item.url || `资源 ${index + 1}`)
+      const safeSource = item.source ? escapeHtml(fixMojibake(item.source) || item.source) : 'PanSou'
       const safeCloudType = escapeHtml(cloudType)
 
       return {

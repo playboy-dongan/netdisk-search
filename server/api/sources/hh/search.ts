@@ -28,17 +28,19 @@ type CacheEntry = {
 }
 
 type SearchPlan = {
-    src: 'all' | 'tg'
+    name: string
+    src: 'all' | 'tg' | 'plugin'
     timeout: number
     delayMs?: number
-    name: 'fast' | 'fallback'
+    plugins?: string[]
 }
 
 const FRESH_CACHE_TTL_MS = 5 * 60 * 1000
 const STALE_CACHE_TTL_MS = 30 * 60 * 1000
-const FAST_PRIMARY_TIMEOUT_MS = 2200
-const FAST_FALLBACK_TIMEOUT_MS = 5000
-const FAST_FALLBACK_DELAY_MS = 250
+const FAST_PRIMARY_TIMEOUT_MS = 2500
+const FAST_PLUGIN_TIMEOUT_MS = 2200
+const FAST_FALLBACK_TIMEOUT_MS = 4800
+const FAST_FALLBACK_DELAY_MS = 80
 const DEEP_MODE_TIMEOUT_MS = 9000
 
 const globalCache = globalThis as typeof globalThis & {
@@ -135,6 +137,10 @@ const requestPansou = async (
         query.cloud_types = cloudTypes.join(',')
     }
 
+    if (plan.plugins?.length) {
+        query.plugins = plan.plugins.join(',')
+    }
+
     return await $fetch<PansouSearchResponse>(`${pansouApiBase}/api/search`, {
         method: 'GET',
         query,
@@ -175,13 +181,15 @@ const runPlan = async (
 const getSearchPlans = (engine: number): SearchPlan[] => {
     if (engine === DEEP_SEARCH_ENGINE) {
         return [
-            { name: 'fallback', src: 'all', timeout: DEEP_MODE_TIMEOUT_MS },
+            { name: 'fallback_all', src: 'all', timeout: DEEP_MODE_TIMEOUT_MS },
         ]
     }
 
     return [
-        { name: 'fast', src: 'tg', timeout: FAST_PRIMARY_TIMEOUT_MS },
-        { name: 'fallback', src: 'all', timeout: FAST_FALLBACK_TIMEOUT_MS, delayMs: FAST_FALLBACK_DELAY_MS },
+        { name: 'fast_tg', src: 'tg', timeout: FAST_PRIMARY_TIMEOUT_MS },
+        { name: 'plugin_labi', src: 'plugin', plugins: ['labi'], timeout: FAST_PLUGIN_TIMEOUT_MS },
+        { name: 'plugin_pansearch', src: 'plugin', plugins: ['pansearch'], timeout: FAST_PLUGIN_TIMEOUT_MS },
+        { name: 'fallback_all', src: 'all', timeout: FAST_FALLBACK_TIMEOUT_MS, delayMs: FAST_FALLBACK_DELAY_MS },
     ]
 }
 
@@ -194,8 +202,8 @@ const abortControllerSafely = (controller: AbortController | null) => {
 }
 
 const abortOtherPlans = (
-    controllers: Array<{ name: SearchPlan['name'], controller: AbortController | null }>,
-    winner: SearchPlan['name'],
+    controllers: Array<{ name: string, controller: AbortController | null }>,
+    winner: string,
 ) => {
     for (const item of controllers) {
         if (item.name !== winner) {
@@ -210,70 +218,38 @@ const runFastSearchPlan = async (
     cloudTypes: string[],
     page: number,
     size: number,
-    [primaryPlan, fallbackPlan]: SearchPlan[],
+    plans: SearchPlan[],
 ) => {
-    const primaryController = typeof AbortController !== 'undefined'
-        ? new AbortController()
-        : null
-    const fallbackController = typeof AbortController !== 'undefined'
-        ? new AbortController()
-        : null
-    const planControllers = [
-        { name: primaryPlan.name, controller: primaryController },
-        { name: fallbackPlan?.name || 'fallback', controller: fallbackController },
-    ]
+    const planControllers = plans.map((plan) => ({
+        name: plan.name,
+        controller: typeof AbortController !== 'undefined'
+            ? new AbortController()
+            : null,
+    }))
 
-    const planTasks = [
+    const planTasks = plans.map((plan, index) =>
         runPlan(
             pansouApiBase,
             keyword,
             cloudTypes,
             page,
             size,
-            primaryPlan,
-            primaryController?.signal,
+            plan,
+            planControllers[index]?.controller?.signal,
         )
             .then((data) => ({
-                name: primaryPlan.name,
+                name: plan.name,
                 success: true,
                 data,
                 error: '',
             }))
             .catch((error: any) => ({
-                name: primaryPlan.name,
+                name: plan.name,
                 success: false,
                 data: emptySearchData(),
                 error: getErrorMessage(error),
-            })),
-        fallbackPlan
-            ? runPlan(
-                pansouApiBase,
-                keyword,
-                cloudTypes,
-                page,
-                size,
-                fallbackPlan,
-                fallbackController?.signal,
-            )
-                .then((data) => ({
-                    name: fallbackPlan.name,
-                    success: true,
-                    data,
-                    error: '',
-                }))
-                .catch((error: any) => ({
-                    name: fallbackPlan.name,
-                    success: false,
-                    data: emptySearchData(),
-                    error: getErrorMessage(error),
-                }))
-            : Promise.resolve({
-                name: 'fallback' as const,
-                success: true,
-                data: emptySearchData(),
-                error: '',
-            }),
-    ]
+            }))
+    )
 
     const wrappedTasks = planTasks.map((task, index) =>
         task.then((result) => ({
@@ -356,6 +332,7 @@ export default defineEventHandler(async (event) => {
             }
         }
 
+        const staleCache = getCachedResult(cacheKey, STALE_CACHE_TTL_MS)
         const searchPlans = getSearchPlans(engine)
         let data = emptySearchData()
         let lastError = ''
@@ -391,7 +368,14 @@ export default defineEventHandler(async (event) => {
         }
 
         if (hasSuccessfulResponse) {
-            setCachedResult(cacheKey, data)
+            if (data.total > 0) {
+                setCachedResult(cacheKey, data)
+            } else if (staleCache?.total) {
+                return {
+                    code: 200,
+                    data: staleCache,
+                }
+            }
 
             return {
                 code: 200,
@@ -399,7 +383,6 @@ export default defineEventHandler(async (event) => {
             }
         }
 
-        const staleCache = getCachedResult(cacheKey, STALE_CACHE_TTL_MS)
         if (staleCache) {
             return {
                 code: 200,
