@@ -29,7 +29,6 @@ type CacheEntry = {
 
 type SearchPlan = {
     src: 'all' | 'tg'
-    conc: number
     timeout: number
 }
 
@@ -37,8 +36,6 @@ const FRESH_CACHE_TTL_MS = 5 * 60 * 1000
 const STALE_CACHE_TTL_MS = 30 * 60 * 1000
 const FAST_MODE_TIMEOUT_MS = 9000
 const DEEP_MODE_TIMEOUT_MS = 12000
-const FAST_SEARCH_CONCURRENCY = 8
-const DEEP_SEARCH_CONCURRENCY = 20
 
 const globalCache = globalThis as typeof globalThis & {
     __NETDISK_SEARCH_CACHE__?: Map<string, CacheEntry>
@@ -83,7 +80,6 @@ const requestPansou = async (
         kw: keyword,
         res: 'merged_by_type',
         src: plan.src,
-        conc: plan.conc,
         refresh: 'false',
     }
 
@@ -106,12 +102,12 @@ const requestPansou = async (
 const getSearchPlans = (engine: number): SearchPlan[] => {
     if (engine === DEEP_SEARCH_ENGINE) {
         return [
-            { src: 'all', conc: DEEP_SEARCH_CONCURRENCY, timeout: DEEP_MODE_TIMEOUT_MS },
+            { src: 'all', timeout: DEEP_MODE_TIMEOUT_MS },
         ]
     }
 
     return [
-        { src: 'tg', conc: FAST_SEARCH_CONCURRENCY, timeout: FAST_MODE_TIMEOUT_MS },
+        { src: 'tg', timeout: FAST_MODE_TIMEOUT_MS },
     ]
 }
 
