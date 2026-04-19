@@ -36,6 +36,14 @@ type QuarkShareTokenResponse = {
   }
 }
 
+type AliyunShareTokenResponse = {
+  share_token?: string
+  expire_time?: string
+  expires_in?: number
+  code?: string
+  message?: string
+}
+
 export const FAST_SEARCH_ENGINE = 2
 export const DEEP_SEARCH_ENGINE = 4
 export const DEFAULT_CLOUD_TYPES = ['baidu', 'aliyun', 'quark', 'xunlei']
@@ -291,6 +299,24 @@ const getQuarkShareId = (value?: string) => {
   return match?.[1] || ''
 }
 
+const getAliyunShareId = (value?: string) => {
+  const parsedUrl = normalizeShareUrl(value)
+
+  if (!parsedUrl) {
+    return ''
+  }
+
+  const host = parsedUrl.hostname.replace(/^www\./, '').toLowerCase()
+
+  if (!['alipan.com', 'aliyundrive.com'].includes(host)) {
+    return ''
+  }
+
+  const match = parsedUrl.pathname.match(/^\/s\/([A-Za-z0-9_-]{8,})/)
+
+  return match?.[1] || ''
+}
+
 const getCachedShareCheck = (url: string) => {
   const cached = shareCheckCache.get(url)
 
@@ -371,6 +397,40 @@ const isQuarkShareLinkActive = async (url: string, passcode = '') => {
   return response.status === 200 && response.code === 0 && Boolean(response.data?.stoken)
 }
 
+const requestAliyunShareToken = async (shareId: string, passcode = '') => {
+  return await $fetch<AliyunShareTokenResponse>(
+    'https://api.aliyundrive.com/v2/share_link/get_share_token',
+    {
+      method: 'POST',
+      body: {
+        share_id: shareId,
+        share_pwd: passcode,
+      },
+      retry: 0,
+      timeout: SHARE_CHECK_TIMEOUT_MS,
+      headers: {
+        accept: 'application/json, text/plain, */*',
+        'content-type': 'application/json',
+        origin: 'https://www.alipan.com',
+        referer: `https://www.alipan.com/s/${shareId}`,
+        'user-agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0 Safari/537.36',
+      },
+    },
+  )
+}
+
+const isAliyunShareLinkActive = async (url: string, passcode = '') => {
+  const shareId = getAliyunShareId(url)
+
+  if (!shareId) {
+    return false
+  }
+
+  const response = await requestAliyunShareToken(shareId, passcode)
+
+  return Boolean(response.share_token)
+}
+
 export const isShareLinkActive = async (url: string, passcode = '') => {
   if (!isKnownShareUrlShape(url)) {
     return false
@@ -386,6 +446,8 @@ export const isShareLinkActive = async (url: string, passcode = '') => {
   try {
     const active = getQuarkShareId(url)
       ? await isQuarkShareLinkActive(url, passcode)
+      : getAliyunShareId(url)
+        ? await isAliyunShareLinkActive(url, passcode)
       : Boolean(await requestSharePageText(url).then((text) => text && !isInvalidSharePage(text.slice(0, 120000))))
 
     setCachedShareCheck(cacheKey, active)
