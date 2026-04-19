@@ -19,11 +19,21 @@ type LegacySearchItem = {
   disk_type: string
   disk_pass: string
   update_time: string
+  share_passcode?: string
 }
 
 type ShareCheckCacheEntry = {
   active: boolean
   checkedAt: number
+}
+
+type QuarkShareTokenResponse = {
+  status?: number
+  code?: number
+  message?: string
+  data?: {
+    stoken?: string
+  }
 }
 
 export const FAST_SEARCH_ENGINE = 2
@@ -269,6 +279,18 @@ const isKnownShareUrlShape = (value?: string) => {
   return false
 }
 
+const getQuarkShareId = (value?: string) => {
+  const parsedUrl = normalizeShareUrl(value)
+
+  if (!parsedUrl || parsedUrl.hostname.replace(/^www\./, '').toLowerCase() !== 'pan.quark.cn') {
+    return ''
+  }
+
+  const match = parsedUrl.pathname.match(/^\/s\/([A-Za-z0-9_-]{10,})/)
+
+  return match?.[1] || ''
+}
+
 const getCachedShareCheck = (url: string) => {
   const cached = shareCheckCache.get(url)
 
@@ -311,26 +333,66 @@ const requestSharePageText = async (url: string) => {
   })
 }
 
-export const isShareLinkActive = async (url: string) => {
+const requestQuarkShareToken = async (shareId: string, passcode = '') => {
+  return await $fetch<QuarkShareTokenResponse>(
+    'https://drive-pc.quark.cn/1/clouddrive/share/sharepage/token',
+    {
+      method: 'POST',
+      query: {
+        pr: 'ucpro',
+        fr: 'pc',
+      },
+      body: {
+        pwd_id: shareId,
+        passcode,
+      },
+      retry: 0,
+      timeout: SHARE_CHECK_TIMEOUT_MS,
+      headers: {
+        accept: 'application/json, text/plain, */*',
+        'content-type': 'application/json',
+        origin: 'https://pan.quark.cn',
+        referer: `https://pan.quark.cn/s/${shareId}`,
+        'user-agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0 Safari/537.36',
+      },
+    },
+  )
+}
+
+const isQuarkShareLinkActive = async (url: string, passcode = '') => {
+  const shareId = getQuarkShareId(url)
+
+  if (!shareId) {
+    return false
+  }
+
+  const response = await requestQuarkShareToken(shareId, passcode)
+
+  return response.status === 200 && response.code === 0 && Boolean(response.data?.stoken)
+}
+
+export const isShareLinkActive = async (url: string, passcode = '') => {
   if (!isKnownShareUrlShape(url)) {
     return false
   }
 
-  const cached = getCachedShareCheck(url)
+  const cacheKey = passcode ? `${url}#${passcode}` : url
+  const cached = getCachedShareCheck(cacheKey)
 
   if (cached !== null) {
     return cached
   }
 
   try {
-    const text = await requestSharePageText(url)
-    const active = Boolean(text) && !isInvalidSharePage(text.slice(0, 120000))
+    const active = getQuarkShareId(url)
+      ? await isQuarkShareLinkActive(url, passcode)
+      : Boolean(await requestSharePageText(url).then((text) => text && !isInvalidSharePage(text.slice(0, 120000))))
 
-    setCachedShareCheck(url, active)
+    setCachedShareCheck(cacheKey, active)
 
     return active
   } catch {
-    setCachedShareCheck(url, false)
+    setCachedShareCheck(cacheKey, false)
 
     return false
   }
@@ -354,6 +416,7 @@ const buildLegacySearchItems = (
         disk_type: diskTypeMap[cloudType] || cloudType.toUpperCase(),
         disk_pass: item.password ? escapeHtml(item.password) : '',
         update_time: normalizeDate(item.datetime),
+        share_passcode: item.password || '',
       }
     })
   }).filter((item) => item.link)
@@ -371,7 +434,7 @@ export const filterActiveShareLinks = async (
   for (let index = 0; index < items.length && activeItems.length < end; index += SHARE_CHECK_CONCURRENCY) {
     const batch = items.slice(index, index + SHARE_CHECK_CONCURRENCY)
     const checkedBatch = await Promise.all(batch.map(async (item) => {
-      return await isShareLinkActive(item.link) ? item : null
+      return await isShareLinkActive(item.link, item.share_passcode) ? item : null
     }))
 
     const activeBatch = checkedBatch.filter((item): item is LegacySearchItem => Boolean(item))
@@ -379,7 +442,7 @@ export const filterActiveShareLinks = async (
   }
 
   return {
-    list: activeItems.slice(start, end),
+    list: activeItems.slice(start, end).map(({ share_passcode, ...item }) => item),
     total: items.length,
   }
 }
