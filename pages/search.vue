@@ -16,7 +16,23 @@ const QUICK_ENGINE = 2
 const DEEP_ENGINE = 4
 const AUTO_DEEP_TRIGGER_TOTAL = 8
 const AUTO_DEEP_WAIT_MS = 700
-const QUICK_SEARCH_PLANS = ['fast_tg', 'plugin_labi', 'plugin_pansearch']
+const QUICK_SEARCH_PLANS = [
+  'fast_tg',
+  'plugin_labi',
+  'plugin_wanou',
+  'plugin_ouge',
+  'plugin_muou',
+  'plugin_pansearch',
+  'plugin_panta',
+  'plugin_zhizhen',
+  'plugin_duoduo',
+  'plugin_jikepan',
+  'plugin_pan666',
+  'plugin_qupansou',
+  'plugin_susu',
+  'plugin_hdr4k',
+  'plugin_xuexizhinan',
+]
 
 const router = useRouter()
 const route = useRoute()

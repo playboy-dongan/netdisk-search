@@ -38,10 +38,26 @@ type SearchPlan = {
 const FRESH_CACHE_TTL_MS = 5 * 60 * 1000
 const STALE_CACHE_TTL_MS = 30 * 60 * 1000
 const FAST_PRIMARY_TIMEOUT_MS = 2500
-const FAST_PLUGIN_TIMEOUT_MS = 2200
+const FAST_PLUGIN_TIMEOUT_MS = 4500
 const FAST_FALLBACK_TIMEOUT_MS = 4800
 const FAST_FALLBACK_DELAY_MS = 80
 const DEEP_MODE_TIMEOUT_MS = 9000
+const FAST_PLUGIN_PLANS: Array<{ name: string, plugins: string[] }> = [
+    { name: 'plugin_labi', plugins: ['labi'] },
+    { name: 'plugin_wanou', plugins: ['wanou'] },
+    { name: 'plugin_ouge', plugins: ['ouge'] },
+    { name: 'plugin_muou', plugins: ['muou'] },
+    { name: 'plugin_pansearch', plugins: ['pansearch'] },
+    { name: 'plugin_panta', plugins: ['panta'] },
+    { name: 'plugin_zhizhen', plugins: ['zhizhen'] },
+    { name: 'plugin_duoduo', plugins: ['duoduo'] },
+    { name: 'plugin_jikepan', plugins: ['jikepan'] },
+    { name: 'plugin_pan666', plugins: ['pan666'] },
+    { name: 'plugin_qupansou', plugins: ['qupansou'] },
+    { name: 'plugin_susu', plugins: ['susu'] },
+    { name: 'plugin_hdr4k', plugins: ['hdr4k'] },
+    { name: 'plugin_xuexizhinan', plugins: ['xuexizhinan'] },
+]
 
 const globalCache = globalThis as typeof globalThis & {
     __NETDISK_SEARCH_CACHE__?: Map<string, CacheEntry>
@@ -187,8 +203,12 @@ const getSearchPlans = (engine: number): SearchPlan[] => {
 
     return [
         { name: 'fast_tg', src: 'tg', timeout: FAST_PRIMARY_TIMEOUT_MS },
-        { name: 'plugin_labi', src: 'plugin', plugins: ['labi'], timeout: FAST_PLUGIN_TIMEOUT_MS },
-        { name: 'plugin_pansearch', src: 'plugin', plugins: ['pansearch'], timeout: FAST_PLUGIN_TIMEOUT_MS },
+        ...FAST_PLUGIN_PLANS.map((plan) => ({
+            name: plan.name,
+            src: 'plugin' as const,
+            plugins: plan.plugins,
+            timeout: FAST_PLUGIN_TIMEOUT_MS,
+        })),
         { name: 'fallback_all', src: 'all', timeout: FAST_FALLBACK_TIMEOUT_MS, delayMs: FAST_FALLBACK_DELAY_MS },
     ]
 }
