@@ -33,6 +33,8 @@ type SearchPlan = {
     timeout: number
     delayMs?: number
     plugins?: string[]
+    apiUrl?: string
+    endpoint?: 'pansou' | 'wzapi'
 }
 
 const FRESH_CACHE_TTL_MS = 5 * 60 * 1000
@@ -57,6 +59,16 @@ const FAST_PLUGIN_PLANS: Array<{ name: string, plugins: string[] }> = [
     { name: 'plugin_susu', plugins: ['susu'] },
     { name: 'plugin_hdr4k', plugins: ['hdr4k'] },
     { name: 'plugin_xuexizhinan', plugins: ['xuexizhinan'] },
+]
+const FAST_EXTRA_PLUGIN_PLANS: Array<{ name: string, plugins: string[] }> = [
+    { name: 'plugin_broad_a', plugins: ['shandian', 'hunhepan', 'panyq', 'huban', 'panwiki', 'quark4k', 'quarksoo', 'qupanshe'] },
+    { name: 'plugin_broad_b', plugins: ['sdso', 'sousou', 'yunsou', 'miaoso', 'xdpan', 'xdyh', 'xiaoji', 'xiaozhang'] },
+    { name: 'plugin_broad_c', plugins: ['ddys', 'erxiao', 'jutoushe', 'libvio', 'ahhhhfs', 'clxiong', 'djgou', 'hdmoli'] },
+    { name: 'plugin_broad_d', plugins: ['fox4k', 'haisou', 'aikanzy', 'bixin', 'cldi', 'clmao', 'cyg', 'wuji'] },
+]
+const FAST_EXTERNAL_PLANS: SearchPlan[] = [
+    { name: 'api_wzapi', src: 'all', timeout: 5200, endpoint: 'wzapi', apiUrl: 'https://wzapi.com/api/jhsj' },
+    { name: 'api_pansou_app', src: 'all', timeout: 5200, apiUrl: 'https://pansou.app/api/search' },
 ]
 
 const globalCache = globalThis as typeof globalThis & {
@@ -142,6 +154,28 @@ const requestPansou = async (
     plan: SearchPlan,
     signal?: AbortSignal,
 ) => {
+    if (plan.endpoint === 'wzapi' && plan.apiUrl) {
+        const query: Record<string, string> = {
+            kw: keyword,
+        }
+
+        if (cloudTypes.length) {
+            query.cloud_types = cloudTypes.join(',')
+        }
+
+        return await $fetch<PansouSearchResponse>(plan.apiUrl, {
+            method: 'GET',
+            query,
+            headers: {
+                accept: 'application/json,text/plain,*/*',
+                'user-agent': 'Cloudflare-Workers',
+            },
+            retry: 0,
+            timeout: plan.timeout,
+            signal,
+        })
+    }
+
     const query: Record<string, string | number> = {
         kw: keyword,
         res: 'merged_by_type',
@@ -157,7 +191,7 @@ const requestPansou = async (
         query.plugins = plan.plugins.join(',')
     }
 
-    return await $fetch<PansouSearchResponse>(`${pansouApiBase}/api/search`, {
+    return await $fetch<PansouSearchResponse>(plan.apiUrl || `${pansouApiBase}/api/search`, {
         method: 'GET',
         query,
         headers: {
@@ -209,6 +243,13 @@ const getSearchPlans = (engine: number): SearchPlan[] => {
             plugins: plan.plugins,
             timeout: FAST_PLUGIN_TIMEOUT_MS,
         })),
+        ...FAST_EXTRA_PLUGIN_PLANS.map((plan) => ({
+            name: plan.name,
+            src: 'plugin' as const,
+            plugins: plan.plugins,
+            timeout: FAST_PLUGIN_TIMEOUT_MS,
+        })),
+        ...FAST_EXTERNAL_PLANS,
         { name: 'fallback_all', src: 'all', timeout: FAST_FALLBACK_TIMEOUT_MS, delayMs: FAST_FALLBACK_DELAY_MS },
     ]
 }

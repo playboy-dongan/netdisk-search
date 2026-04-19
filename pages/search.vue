@@ -32,6 +32,12 @@ const QUICK_SEARCH_PLANS = [
   'plugin_susu',
   'plugin_hdr4k',
   'plugin_xuexizhinan',
+  'plugin_broad_a',
+  'plugin_broad_b',
+  'plugin_broad_c',
+  'plugin_broad_d',
+  'api_wzapi',
+  'api_pansou_app',
 ]
 
 const router = useRouter()
