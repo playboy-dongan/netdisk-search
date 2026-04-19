@@ -6,7 +6,7 @@ import {
     mapCurrentTypeToCloudTypes,
     normalizeEngine,
     normalizeKeyword,
-    transformMergedByTypeToLegacyList
+    transformMergedByTypeToValidatedLegacyList
 } from '~/server/utils/pansou'
 
 type PansouSearchResponse = {
@@ -171,7 +171,7 @@ const runPlan = async (
         throw new Error(response.message || '搜索源返回异常')
     }
 
-    return transformMergedByTypeToLegacyList(
+    return await transformMergedByTypeToValidatedLegacyList(
         response.data?.merged_by_type || {},
         page,
         size,
